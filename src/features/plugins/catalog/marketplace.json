@@ -1,0 +1,257 @@
+{
+  "$schema": "https://voyager.nagi.fun/marketplace.schema.json",
+  "name": "voyager-official",
+  "version": "1.0.0",
+  "owner": {
+    "name": "voyager-official",
+    "url": "https://github.com/voyager-crew/voyager"
+  },
+  "description": "Hand-kept index of the bundled official site plugins (Gemini and AI Studio excluded). The extension discovers sites/*/site.json and sites/*/plugins/*/plugin.json itself; keep this list in sync (a test enforces it, and bun run plugin:new appends to it).",
+  "plugins": [
+    {
+      "name": "claude-cjk-render-fix",
+      "source": "sites/claude/plugins/cjk-render-fix/plugin.json",
+      "official": true
+    },
+    {
+      "name": "claude-reading-width",
+      "source": "sites/claude/plugins/reading-width/plugin.json",
+      "official": true
+    },
+    {
+      "name": "claude-reading-typography",
+      "source": "sites/claude/plugins/reading-typography/plugin.json",
+      "official": true
+    },
+    {
+      "name": "claude-ctrl-enter-send",
+      "source": "sites/claude/plugins/ctrl-enter-send/plugin.json",
+      "official": true
+    },
+    {
+      "name": "claude-draft-save",
+      "source": "sites/claude/plugins/draft-save/plugin.json",
+      "official": true
+    },
+    {
+      "name": "claude-quote-reply",
+      "source": "sites/claude/plugins/quote-reply/plugin.json",
+      "official": true
+    },
+    {
+      "name": "claude-composer-counter",
+      "source": "sites/claude/plugins/composer-counter/plugin.json",
+      "official": true
+    },
+    {
+      "name": "claude-folders",
+      "source": "sites/claude/plugins/folders/plugin.json",
+      "official": true
+    },
+    {
+      "name": "chatgpt-reading-width",
+      "source": "sites/chatgpt/plugins/reading-width/plugin.json",
+      "official": true
+    },
+    {
+      "name": "chatgpt-reading-typography",
+      "source": "sites/chatgpt/plugins/reading-typography/plugin.json",
+      "official": true
+    },
+    {
+      "name": "chatgpt-collapse-long-messages",
+      "source": "sites/chatgpt/plugins/collapse-long-messages/plugin.json",
+      "official": true
+    },
+    {
+      "name": "chatgpt-ctrl-enter-send",
+      "source": "sites/chatgpt/plugins/ctrl-enter-send/plugin.json",
+      "official": true
+    },
+    {
+      "name": "chatgpt-quote-reply",
+      "source": "sites/chatgpt/plugins/quote-reply/plugin.json",
+      "official": true
+    },
+    {
+      "name": "chatgpt-composer-counter",
+      "source": "sites/chatgpt/plugins/composer-counter/plugin.json",
+      "official": true
+    },
+    {
+      "name": "deepseek-reading-width",
+      "source": "sites/deepseek/plugins/reading-width/plugin.json",
+      "official": true
+    },
+    {
+      "name": "deepseek-formula-copy",
+      "source": "sites/deepseek/plugins/formula-copy/plugin.json",
+      "official": true
+    },
+    {
+      "name": "deepseek-timeline",
+      "source": "sites/deepseek/plugins/timeline/plugin.json",
+      "official": true
+    },
+    {
+      "name": "deepseek-vim-input",
+      "source": "sites/deepseek/plugins/vim-input/plugin.json",
+      "official": true
+    },
+    {
+      "name": "deepseek-wrap-code",
+      "source": "sites/deepseek/plugins/wrap-code/plugin.json",
+      "official": true
+    },
+    {
+      "name": "deepseek-reading-typography",
+      "source": "sites/deepseek/plugins/reading-typography/plugin.json",
+      "official": true
+    },
+    {
+      "name": "deepseek-table-copy",
+      "source": "sites/deepseek/plugins/table-copy/plugin.json",
+      "official": true
+    },
+    {
+      "name": "deepseek-copy-thinking",
+      "source": "sites/deepseek/plugins/copy-thinking/plugin.json",
+      "official": true
+    },
+    {
+      "name": "deepseek-code-collapse",
+      "source": "sites/deepseek/plugins/code-collapse/plugin.json",
+      "official": true
+    },
+    {
+      "name": "deepseek-ctrl-enter-send",
+      "source": "sites/deepseek/plugins/ctrl-enter-send/plugin.json",
+      "official": true
+    },
+    {
+      "name": "deepseek-draft-save",
+      "source": "sites/deepseek/plugins/draft-save/plugin.json",
+      "official": true
+    },
+    {
+      "name": "deepseek-quote-reply",
+      "source": "sites/deepseek/plugins/quote-reply/plugin.json",
+      "official": true
+    },
+    {
+      "name": "deepseek-composer-counter",
+      "source": "sites/deepseek/plugins/composer-counter/plugin.json",
+      "official": true
+    },
+    {
+      "name": "deepseek-folders",
+      "source": "sites/deepseek/plugins/folders/plugin.json",
+      "official": true
+    },
+    {
+      "name": "chatgpt-user-latex",
+      "source": "sites/chatgpt/plugins/user-latex/plugin.json",
+      "official": true
+    },
+    {
+      "name": "chatgpt-diagram-rendering",
+      "source": "sites/chatgpt/plugins/diagram-rendering/plugin.json",
+      "official": true
+    },
+    {
+      "name": "chatgpt-folders",
+      "source": "sites/chatgpt/plugins/folders/plugin.json",
+      "official": true
+    },
+    {
+      "name": "chatgpt-site-check",
+      "source": "sites/chatgpt/plugins/site-check/plugin.json",
+      "official": true
+    },
+    {
+      "name": "claude-site-check",
+      "source": "sites/claude/plugins/site-check/plugin.json",
+      "official": true
+    },
+    {
+      "name": "deepseek-site-check",
+      "source": "sites/deepseek/plugins/site-check/plugin.json",
+      "official": true
+    },
+    {
+      "name": "deepseek-export",
+      "source": "sites/deepseek/plugins/export/plugin.json",
+      "official": true
+    },
+    {
+      "name": "claude-export",
+      "source": "sites/claude/plugins/export/plugin.json",
+      "official": true
+    },
+    {
+      "name": "kimi-reading-width",
+      "source": "sites/kimi/plugins/reading-width/plugin.json",
+      "official": true
+    },
+    {
+      "name": "kimi-reading-typography",
+      "source": "sites/kimi/plugins/reading-typography/plugin.json",
+      "official": true
+    },
+    {
+      "name": "kimi-ctrl-enter-send",
+      "source": "sites/kimi/plugins/ctrl-enter-send/plugin.json",
+      "official": true
+    },
+    {
+      "name": "kimi-draft-save",
+      "source": "sites/kimi/plugins/draft-save/plugin.json",
+      "official": true
+    },
+    {
+      "name": "kimi-quote-reply",
+      "source": "sites/kimi/plugins/quote-reply/plugin.json",
+      "official": true
+    },
+    {
+      "name": "kimi-composer-counter",
+      "source": "sites/kimi/plugins/composer-counter/plugin.json",
+      "official": true
+    },
+    {
+      "name": "kimi-folders",
+      "source": "sites/kimi/plugins/folders/plugin.json",
+      "official": true
+    },
+    {
+      "name": "kimi-site-check",
+      "source": "sites/kimi/plugins/site-check/plugin.json",
+      "official": true
+    },
+    {
+      "name": "kimi-export",
+      "source": "sites/kimi/plugins/export/plugin.json",
+      "official": true
+    },
+    {
+      "name": "chatgpt-prompt-manager",
+      "source": "sites/chatgpt/plugins/prompt-manager/plugin.json",
+      "official": true
+    },
+    {
+      "name": "claude-prompt-manager",
+      "source": "sites/claude/plugins/prompt-manager/plugin.json",
+      "official": true
+    },
+    {
+      "name": "deepseek-prompt-manager",
+      "source": "sites/deepseek/plugins/prompt-manager/plugin.json",
+      "official": true
+    },
+    {
+      "name": "kimi-prompt-manager",
+      "source": "sites/kimi/plugins/prompt-manager/plugin.json",
+      "official": true
+    }
+  ]
+}

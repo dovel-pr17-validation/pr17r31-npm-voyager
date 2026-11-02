@@ -1,0 +1,54 @@
+import React from 'react';
+
+import type { TranslationKey } from '@/utils/translations';
+
+import type { PopupLayoutSettingsController } from '../hooks/usePopupLayoutSettings';
+import { FOLDER_SPACING, FOLDER_TREE_INDENT } from '../utils/layoutSettings';
+import type { NativePopupSectionId } from '../utils/nativeSiteCapabilities';
+import WidthSlider from './WidthSlider';
+
+export interface PopupLayoutSettingsProps {
+  settings: PopupLayoutSettingsController;
+  t: (key: TranslationKey) => string;
+  wrapSection: (id: NativePopupSectionId, content: React.ReactNode) => React.ReactNode;
+}
+
+export function PopupLayoutSettings({ settings, t, wrapSection }: PopupLayoutSettingsProps) {
+  const { folderSpacingAdjuster, folderTreeIndentAdjuster } = settings;
+
+  return (
+    <>
+      {/* Folder Spacing */}
+      {wrapSection(
+        'folderSpacing',
+        <WidthSlider
+          label={t('folderSpacing')}
+          value={folderSpacingAdjuster.width}
+          min={FOLDER_SPACING.min}
+          max={FOLDER_SPACING.max}
+          step={1}
+          narrowLabel={t('folderSpacingCompact')}
+          wideLabel={t('folderSpacingSpacious')}
+          valueFormatter={(v) => `${v}px`}
+          onChange={folderSpacingAdjuster.handleChange}
+          onChangeComplete={folderSpacingAdjuster.handleChangeComplete}
+        />,
+      )}
+      {wrapSection(
+        'folderTreeIndent',
+        <WidthSlider
+          label={t('folderTreeIndent')}
+          value={folderTreeIndentAdjuster.width}
+          min={FOLDER_TREE_INDENT.min}
+          max={FOLDER_TREE_INDENT.max}
+          step={1}
+          narrowLabel={t('folderTreeIndentCompact')}
+          wideLabel={t('folderTreeIndentSpacious')}
+          valueFormatter={(v) => `${v}px`}
+          onChange={folderTreeIndentAdjuster.handleChange}
+          onChangeComplete={folderTreeIndentAdjuster.handleChangeComplete}
+        />,
+      )}
+    </>
+  );
+}

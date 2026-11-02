@@ -1,0 +1,14 @@
+{
+  "quoteReplyAction": {
+    "message": "Цитировать",
+    "description": "Button label and accessible name for quoting selected assistant reply text into the message composer"
+  },
+  "quoteReplyComposerMissing": {
+    "message": "Не удалось найти поле ввода сообщения.",
+    "description": "Toast when the quote action cannot find an available message composer"
+  },
+  "quoteReplyInsertFailed": {
+    "message": "Не удалось добавить цитату в поле сообщения. Выделение сохранено.",
+    "description": "Toast when the message composer did not accept the quote; the selection stays so the person can retry or copy it"
+  }
+}

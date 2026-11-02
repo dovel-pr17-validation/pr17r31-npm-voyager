@@ -1,0 +1,303 @@
+.gv-pm-search {
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gv-pm-search input[type='search'] {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--gv-pm-wash, oklch(0.14 0.004 285 / 0.04));
+  color: inherit;
+  border: 1px solid var(--gv-ui-border);
+  padding: 0 12px;
+  font: inherit;
+  font-size: 13px;
+  box-sizing: border-box;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+  outline: none;
+}
+
+.gv-pm-search input[type='search']:focus {
+  border-color: var(--gv-pm-brand, var(--gv-pm-brand-default));
+  box-shadow: 0 0 0 3px var(--gv-pm-brand-soft);
+}
+
+.gv-pm-saved-toolbar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px 8px;
+}
+
+.gv-pm-saved-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  width: 100%;
+  padding: 3px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  background: var(--gv-pm-wash-strong, oklch(0.14 0.004 285 / 0.07));
+}
+
+.gv-pm-saved-filter {
+  min-width: 0;
+  height: 26px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--gv-ui-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gv-pm-saved-filter:hover {
+  color: var(--gv-ui-text);
+}
+
+/* Selected is a neutral raised face, like the folder settings segments; the
+   accent is kept for what the user acts on. */
+.gv-pm-saved-filter.active {
+  background: var(--gv-pm-segment-selected, oklch(0.995 0.002 250));
+  color: var(--gv-ui-text);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.16);
+}
+
+.gv-pm-saved-filter:focus-visible {
+  outline: 2px solid var(--gv-ui-focus-ring);
+  outline-offset: 2px;
+}
+
+.gv-pm-tags-wrap {
+  position: relative;
+  padding: 0 16px 8px 16px;
+}
+
+.gv-pm-tags-wrap::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 8px;
+  height: 22px;
+  background: linear-gradient(to bottom, oklch(0 0 0 / 0), var(--gv-pm-surface));
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.gv-pm-tags-wrap.gv-pm-tags-scrollable:not(.gv-pm-tags-scroll-end)::before {
+  opacity: 1;
+}
+
+.gv-pm-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: min(24vh, 180px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.gv-pm-tags-scroll-hint {
+  position: absolute;
+  right: 18px;
+  bottom: 10px;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  /* Hides the text glyph the node is built with; ::before draws a line chevron. */
+  font-size: 0;
+  line-height: 1;
+  background: oklch(0.2 0.008 285 / 0.72);
+  color: oklch(0.92 0.004 250);
+  box-shadow: 0 4px 10px oklch(0 0 0 / 0.2);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(2px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.gv-pm-tags-scroll-hint::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  background: currentColor;
+  -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>')
+    center / contain no-repeat;
+  mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>')
+    center / contain no-repeat;
+}
+
+.gv-pm-tags-wrap.gv-pm-tags-scrollable:not(.gv-pm-tags-scroll-end) .gv-pm-tags-scroll-hint {
+  opacity: 0.9;
+  transform: translateY(0);
+}
+
+.gv-pm-tag {
+  border-radius: 9999px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--gv-pm-wash-strong, oklch(0.14 0.004 285 / 0.07));
+  color: var(--gv-ui-text-muted);
+  border: none;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.gv-pm-tag:hover {
+  color: var(--gv-ui-text);
+}
+
+.gv-pm-tag.active {
+  background: var(--gv-pm-brand-soft);
+  color: var(--gv-pm-brand-ink, var(--gv-pm-brand, var(--gv-pm-brand-default)));
+}
+
+.gv-pm-add-form {
+  padding: 12px 16px 14px 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.gv-pm-input-text,
+.gv-pm-input-tags,
+.gv-pm-input-name {
+  width: 100%;
+  border-radius: 10px;
+  padding: 9px 12px;
+  /* Form controls do not inherit type by default, so without this the fields
+     render in the browser's form font while the rest of the panel does not. */
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  /* Inherit the panel foreground rather than restating a hex per theme. */
+  color: inherit;
+  background: oklch(0.14 0.004 285 / 0.03);
+  border: 1px solid oklch(0.92 0.004 250 / 0.9);
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.gv-pm-input-text {
+  resize: vertical;
+  min-height: 68px;
+  max-height: 200px;
+}
+
+.gv-pm-input-text::placeholder,
+.gv-pm-input-tags::placeholder,
+.gv-pm-input-name::placeholder {
+  color: currentcolor;
+  opacity: 0.45;
+}
+
+/* One focus treatment for every field, built from the accent token instead of
+   from its hue, so a custom brand colour keeps its own lightness and chroma. */
+.gv-pm-input-text:focus,
+.gv-pm-input-tags:focus,
+.gv-pm-input-name:focus {
+  border-color: var(--gv-pm-brand, var(--gv-pm-brand-default));
+  box-shadow: 0 0 0 3px var(--gv-pm-brand-soft);
+}
+
+html[data-gv-scheme='dark'] .gv-pm-input-text,
+html[data-gv-scheme='dark'] .gv-pm-input-tags,
+html[data-gv-scheme='dark'] .gv-pm-input-name {
+  background: oklch(0.92 0.004 250 / 0.04);
+  border-color: oklch(0.3 0.008 285 / 0.9);
+}
+
+html[data-gv-scheme='light'] .gv-pm-input-text,
+html[data-gv-scheme='light'] .gv-pm-input-tags,
+html[data-gv-scheme='light'] .gv-pm-input-name {
+  background: oklch(0.14 0.004 285 / 0.03);
+  border-color: oklch(0.92 0.004 250 / 0.9);
+}
+
+.gv-pm-add-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 2px;
+}
+
+.gv-pm-inline-hint {
+  margin-right: auto;
+  font-size: 12px;
+  color: var(--gv-ui-danger);
+}
+
+.gv-pm-inline-hint.ok {
+  color: var(--gv-pm-brand-ink, var(--gv-pm-brand, var(--gv-pm-brand-default)));
+}
+
+.gv-pm-save,
+.gv-pm-cancel {
+  box-sizing: border-box;
+  height: 28px;
+  border-radius: 8px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+/* The accent comes straight from the brand token. The previous rule rebuilt the
+   colour out of --gv-pm-brand-h alone and then hardcoded hue 158 in :hover and
+   hue 160 in the dark foreground, so a user's custom accent snapped back to the
+   default green as soon as the pointer touched the button. */
+.gv-pm-save {
+  background: var(--gv-pm-brand, var(--gv-pm-brand-default));
+  color: var(--gv-pm-brand-fg, var(--gv-pm-brand-fg-default));
+  border: 1px solid transparent;
+  /* The panel is a flat, bordered surface. A lifting, glowing primary button
+     belongs to a different design language, so it neither rises nor glows. */
+  box-shadow: none;
+}
+
+.gv-pm-save:hover {
+  background: var(--gv-pm-brand-hover);
+}
+
+.gv-pm-cancel {
+  background: transparent;
+  /* Inherit the surface foreground instead of restating it per theme. */
+  color: inherit;
+  border: 1px solid var(--gv-ui-border);
+}
+
+.gv-pm-cancel:hover {
+  background: var(--gv-ui-hover);
+}

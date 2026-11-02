@@ -1,0 +1,17 @@
+{
+  "sinceEngine": "1.8.0",
+  "params": {
+    "target": {
+      "type": "semanticKey",
+      "required": true
+    },
+    "maxPx": {
+      "type": "number",
+      "required": false
+    },
+    "startCollapsed": {
+      "type": "boolean",
+      "required": false
+    }
+  }
+}

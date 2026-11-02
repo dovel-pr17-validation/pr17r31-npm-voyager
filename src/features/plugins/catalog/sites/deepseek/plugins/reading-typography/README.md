@@ -1,0 +1,46 @@
+---
+id: voyager.deepseek-reading-typography
+name: DeepSeek · Reading Typography
+category: readability
+version: 1.0.0
+author: voyager-official
+license: MIT
+matches:
+  - https://chat.deepseek.com/*
+engine: '>=1.4.0'
+settings:
+  fontSizeEnabled: 'boolean (default off) - apply the text size'
+  fontSize: 'number (80-150, default 100) - answer text size in percent'
+  spacingEnabled: 'boolean (default off) - apply line height and paragraph spacing'
+  lineHeight: 'number (120-220, default 160) - line height in percent of the text size'
+  paragraphSpacing: 'number (0-24, default 16) - space between paragraphs in pixels'
+---
+
+# DeepSeek - Reading Typography
+
+Adjusts the text size, line height and paragraph spacing of DeepSeek answers.
+The controls match Voyager's Gemini font size and spacing settings: text size in
+percent (80-150), and one spacing switch for line height (120-220 percent) and
+paragraph spacing (0-24 px). Both switches are off by default, and a switch that
+is off leaves its properties native.
+
+Only answer paragraphs, list items and table cells change, as Gemini's text size
+does. Nested items and cells inherit the size, so a percentage never compounds. Inline code and inline math scale with the text
+around them. Code blocks keep their fixed size, and a paragraph that holds a
+block formula stays native because KaTeX sizes it relative to its parent.
+Headings, thinking content, user messages and the composer are left
+alone. DeepSeek's native text is 16 px on a 28 px line; with only the size
+switch on, the line keeps that 1.75 ratio as the text grows. Table cells scale
+from their own 15 px on a 25 px line, so 100% leaves them native.
+
+Uses the DeepSeek adapter's `assistantTurn` semantic key. No extra host
+permissions, native handler, remote resources or new storage keys. Disabling the
+plugin removes the scoped class, both switch attributes and the stylesheet.
+
+Live check (2026-10-11, size switch on at 125%): answer text 16 → 20 px on a
+35 px line, inline code 17.5 px, code blocks unchanged at 13 px. In the popup
+each slider stays greyed out until its switch is on. Cells measured 20 px
+before they scaled from 15 px; the expected 18.75 px on a 31.25 px line is
+pending a re-check.
+
+Related issue: #1016.

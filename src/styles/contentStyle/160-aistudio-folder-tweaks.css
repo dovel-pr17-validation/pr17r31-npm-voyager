@@ -1,0 +1,64 @@
+/* ==========================
+   AI Studio specific tweaks
+   - Compact spacing
+   - Do NOT affect gemini.google UI
+   - Let AI Studio manage sidebar width natively
+   ========================== */
+
+/* Allow folder container to adapt to native sidebar width */
+.gv-aistudio-root ms-prompt-history-v3 {
+  /* Ensure folder content doesn't overflow */
+  overflow-x: hidden;
+}
+
+.gv-aistudio-root .nav-content.v3-left-nav {
+  /* Just add padding for folder icons, don't force width */
+  padding-right: 4px;
+}
+
+.gv-aistudio .gv-folder-header {
+  padding: 6px 8px 6px 0;
+  margin-bottom: 6px;
+}
+
+.gv-aistudio .gv-folder-title {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* Gemini's title rules skip `.gv-aistudio`; the h2 keeps the nav's own type. */
+.gv-aistudio .gv-folder-header .title {
+  margin: 0;
+  font-family: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+}
+
+/* Reduce container/list side paddings to utilize width */
+.gv-aistudio.gv-folder-container {
+  padding-left: 2px;
+  padding-right: 2px;
+}
+
+.gv-aistudio .gv-folder-header-actions .gv-folder-action-btn {
+  padding: 2px;
+}
+
+tr.gv-library-row-selected,
+tr.gv-library-row-selected:hover {
+  background: color-mix(in srgb, var(--folder-selected-accent) 7%, transparent) !important;
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--folder-selected-accent) 82%, transparent);
+}
+
+tr.gv-library-row-selected td {
+  background: transparent !important;
+}
+
+/* Isolation cannot read the page's account: the folders are hidden, and this says why. */
+.gv-aistudio .gv-folder-account-notice {
+  margin: 2px 12px 8px;
+  font-size: 12px;
+  line-height: 16px;
+  color: inherit;
+  opacity: 0.72;
+}

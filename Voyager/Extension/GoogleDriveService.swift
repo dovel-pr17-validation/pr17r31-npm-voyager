@@ -1,0 +1,582 @@
+import AppAuthCore
+import Foundation
+import os.log
+
+final class GoogleDriveService {
+  static let shared = GoogleDriveService()
+
+  let scope = "https://www.googleapis.com/auth/drive.file"
+  private let apiHost = "www.googleapis.com"
+  /// Each account's backup folder; see `GoogleDriveService+BackupFolder`.
+  let folderCache = VoyagerDriveFolderCache()
+  /// The Google authorization requests use; see `withAccessToken`.
+  let authorizations = VoyagerStoredAuthorizationTracker<OIDAuthState>()
+
+  enum AuthorizationState {
+    case signedIn
+    case signedOut
+    case requiresAppLaunch
+  }
+
+  func findFile(
+    named fileName: String,
+    in scope: VoyagerDriveAccountScope,
+    completion: @escaping (Result<String?, Error>) -> Void
+  ) {
+    migrateBackupFolderIfPresent(in: scope) {
+      self.findFileInResolvedFolder(named: fileName, in: scope, completion: completion)
+    }
+  }
+
+  private func findFileInResolvedFolder(
+    named fileName: String,
+    in scope: VoyagerDriveAccountScope,
+    completion: @escaping (Result<String?, Error>) -> Void
+  ) {
+    guard let backupFolderID = folderCache.folder(for: scope.account) else {
+      findItem(
+        named: fileName,
+        mimeType: nil,
+        fields: "files(id,name)",
+        in: scope,
+        completion: completion
+      )
+      return
+    }
+
+    findItem(
+      clauses: [
+        "name='\(escapeQueryValue(fileName))'",
+        "'\(escapeQueryValue(backupFolderID))' in parents",
+        "trashed=false",
+      ],
+      fields: "files(id,name)",
+      in: scope
+    ) { scopedResult in
+      switch scopedResult {
+      case .failure(let error):
+        completion(.failure(error))
+      case .success(let fileID?):
+        completion(.success(fileID))
+      case .success(nil):
+        // Older versions searched globally and may have left a sync file in a
+        // previous folder. Keep one global fallback so it can be recovered and
+        // moved into the resolved folder by ensureFile.
+        self.findItem(
+          named: fileName,
+          mimeType: nil,
+          fields: "files(id,name)",
+          in: scope,
+          completion: completion
+        )
+      }
+    }
+  }
+
+  func ensureFile(
+    named fileName: String,
+    cachedFileID: String?,
+    in scope: VoyagerDriveAccountScope,
+    completion: @escaping (Result<String, Error>) -> Void
+  ) {
+    ensureBackupFolder(in: scope) { folderResult in
+      switch folderResult {
+      case .failure(let error):
+        completion(.failure(error))
+      case .success(let folderID):
+        self.resolveFile(
+          named: fileName,
+          cachedFileID: cachedFileID,
+          folderID: folderID,
+          in: scope,
+          completion: completion
+        )
+      }
+    }
+  }
+
+  func upload(
+    fileID: String,
+    json: String,
+    in scope: VoyagerDriveAccountScope,
+    completion: @escaping (Result<VoyagerGoogleDriveMetadataResponse, Error>) -> Void
+  ) {
+    performRequest(
+      method: "PATCH",
+      path: "/upload/drive/v3/files/\(fileID)",
+      queryItems: [
+        URLQueryItem(name: "uploadType", value: "media"),
+        URLQueryItem(name: "fields", value: "id,md5Checksum,modifiedTime"),
+      ],
+      contentType: "application/json",
+      body: Data(json.utf8),
+      in: scope
+    ) { result in
+      switch result {
+      case .failure(let error):
+        completion(.failure(error))
+      case .success(let response):
+        guard response.isSuccessful else {
+          completion(.failure(self.requestFailure(response)))
+          return
+        }
+        do {
+          let metadata = try JSONDecoder().decode(DriveUploadMetadata.self, from: response.data)
+          completion(.success(VoyagerGoogleDriveMetadataResponse(
+            found: true, id: metadata.id, md5Checksum: metadata.md5Checksum,
+            modifiedTime: metadata.modifiedTime
+          )))
+        } catch {
+          // The media write succeeded. Missing receipt fields must never retry that write.
+          completion(.success(VoyagerGoogleDriveMetadataResponse(
+            found: true, id: nil, md5Checksum: nil, modifiedTime: nil
+          )))
+        }
+      }
+    }
+  }
+
+  func download(
+    fileID: String,
+    in scope: VoyagerDriveAccountScope,
+    completion: @escaping (Result<String?, Error>) -> Void
+  ) {
+    performRequest(
+      method: "GET",
+      path: "/drive/v3/files/\(fileID)",
+      queryItems: [URLQueryItem(name: "alt", value: "media")],
+      in: scope
+    ) { result in
+      switch result {
+      case .failure(let error):
+        completion(.failure(error))
+      case .success(let response) where response.statusCode == 404:
+        completion(.success(nil))
+      case .success(let response):
+        guard response.isSuccessful,
+          let json = VoyagerGoogleDriveMedia.decode(response.data)
+        else {
+          completion(.failure(self.requestFailure(response)))
+          return
+        }
+        completion(.success(json))
+      }
+    }
+  }
+
+  private func resolveFile(
+    named fileName: String,
+    cachedFileID: String?,
+    folderID: String,
+    in scope: VoyagerDriveAccountScope,
+    completion: @escaping (Result<String, Error>) -> Void
+  ) {
+    guard let cachedFileID else {
+      findOrCreateFile(named: fileName, folderID: folderID, in: scope, completion: completion)
+      return
+    }
+
+    getFileParents(fileID: cachedFileID, in: scope) { result in
+      switch result {
+      case .failure(let error):
+        completion(.failure(error))
+      case .success(nil):
+        self.findOrCreateFile(
+          named: fileName, folderID: folderID, in: scope, completion: completion)
+      case .success(let parents?):
+        self.moveIfNeeded(
+          fileID: cachedFileID, parents: parents, folderID: folderID, in: scope
+        ) { moveResult in
+          switch moveResult {
+          case .failure(let error):
+            completion(.failure(error))
+          case .success:
+            completion(.success(cachedFileID))
+          }
+        }
+      }
+    }
+  }
+
+  private func findOrCreateFile(
+    named fileName: String,
+    folderID: String,
+    in scope: VoyagerDriveAccountScope,
+    completion: @escaping (Result<String, Error>) -> Void
+  ) {
+    // ensureBackupFolder already validated the folder for this write.
+    findFileInResolvedFolder(named: fileName, in: scope) { result in
+      switch result {
+      case .failure(let error):
+        completion(.failure(error))
+      case .success(nil):
+        self.createItem(
+          name: fileName,
+          mimeType: "application/json",
+          parentID: folderID,
+          in: scope,
+          completion: completion
+        )
+      case .success(let fileID?):
+        self.getFileParents(fileID: fileID, in: scope) { parentsResult in
+          switch parentsResult {
+          case .failure(let error):
+            completion(.failure(error))
+          case .success(nil):
+            self.createItem(
+              name: fileName,
+              mimeType: "application/json",
+              parentID: folderID,
+              in: scope,
+              completion: completion
+            )
+          case .success(let parents?):
+            self.moveIfNeeded(
+              fileID: fileID, parents: parents, folderID: folderID, in: scope
+            ) { moveResult in
+              switch moveResult {
+              case .failure(let error):
+                completion(.failure(error))
+              case .success:
+                completion(.success(fileID))
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  func findItem(
+    named name: String,
+    mimeType: String?,
+    fields: String,
+    in scope: VoyagerDriveAccountScope,
+    completion: @escaping (Result<String?, Error>) -> Void
+  ) {
+    var clauses = ["name='\(escapeQueryValue(name))'", "trashed=false"]
+    if let mimeType {
+      clauses.insert("mimeType='\(escapeQueryValue(mimeType))'", at: 1)
+    }
+
+    findItem(clauses: clauses, fields: fields, in: scope, completion: completion)
+  }
+
+  func findItem(
+    clauses: [String],
+    fields: String,
+    in scope: VoyagerDriveAccountScope,
+    completion: @escaping (Result<String?, Error>) -> Void
+  ) {
+    performRequest(
+      method: "GET",
+      path: "/drive/v3/files",
+      queryItems: [
+        URLQueryItem(name: "q", value: clauses.joined(separator: " and ")),
+        URLQueryItem(name: "fields", value: fields),
+        URLQueryItem(name: "pageSize", value: "1"),
+      ],
+      in: scope
+    ) { result in
+      completion(
+        result.flatMap { response in
+          guard response.isSuccessful else {
+            return .failure(self.requestFailure(response))
+          }
+          return Result {
+            try JSONDecoder().decode(DriveFileList.self, from: response.data).files.first?.id
+          }
+        }
+      )
+    }
+  }
+
+  func createItem(
+    name: String,
+    mimeType: String,
+    parentID: String?,
+    appProperties: [String: String]? = nil,
+    in scope: VoyagerDriveAccountScope,
+    completion: @escaping (Result<String, Error>) -> Void
+  ) {
+    let metadata = DriveCreateMetadata(
+      name: name,
+      mimeType: mimeType,
+      parents: parentID.map { [$0] },
+      appProperties: appProperties
+    )
+
+    let body: Data
+    do {
+      body = try JSONEncoder().encode(metadata)
+    } catch {
+      completion(.failure(error))
+      return
+    }
+
+    performRequest(
+      method: "POST",
+      path: "/drive/v3/files",
+      contentType: "application/json",
+      body: body,
+      in: scope
+    ) { result in
+      completion(
+        result.flatMap { response in
+          guard response.isSuccessful else {
+            return .failure(self.requestFailure(response))
+          }
+          return Result { try JSONDecoder().decode(DriveFile.self, from: response.data).id }
+        }
+      )
+    }
+  }
+
+  func getFileParents(
+    fileID: String,
+    in scope: VoyagerDriveAccountScope,
+    completion: @escaping (Result<[String]?, Error>) -> Void
+  ) {
+    performRequest(
+      method: "GET",
+      path: "/drive/v3/files/\(fileID)",
+      queryItems: [URLQueryItem(name: "fields", value: "parents,trashed")],
+      in: scope
+    ) { result in
+      switch result {
+      case .failure(let error):
+        completion(.failure(error))
+      case .success(let response) where response.statusCode == 404:
+        completion(.success(nil))
+      case .success(let response):
+        guard response.isSuccessful else {
+          completion(.failure(self.requestFailure(response)))
+          return
+        }
+        do {
+          let metadata = try JSONDecoder().decode(DriveParentMetadata.self, from: response.data)
+          completion(.success(metadata.trashed == true ? nil : metadata.parents ?? []))
+        } catch {
+          completion(.failure(error))
+        }
+      }
+    }
+  }
+
+  private func moveIfNeeded(
+    fileID: String,
+    parents: [String],
+    folderID: String,
+    in scope: VoyagerDriveAccountScope,
+    completion: @escaping (Result<Void, Error>) -> Void
+  ) {
+    guard !parents.contains(folderID) else {
+      completion(.success(()))
+      return
+    }
+
+    performRequest(
+      method: "PATCH",
+      path: "/drive/v3/files/\(fileID)",
+      queryItems: [
+        URLQueryItem(name: "addParents", value: folderID),
+        URLQueryItem(name: "removeParents", value: parents.joined(separator: ",")),
+        URLQueryItem(name: "fields", value: "id,parents"),
+      ],
+      in: scope
+    ) { result in
+      switch result {
+      case .failure(let error):
+        os_log(
+          .error,
+          "Google Drive file move request failed: %{public}@",
+          error.localizedDescription
+        )
+        if VoyagerGoogleDriveHTTPFailureMapper.isAuthorizationFailure(error) {
+          completion(.failure(error))
+        } else {
+          completion(.success(()))
+        }
+      case .success(let response):
+        guard !response.isSuccessful else {
+          completion(.success(()))
+          return
+        }
+        let error = self.requestFailure(response)
+        os_log(
+          .error,
+          "Google Drive file move returned HTTP %{public}d: %{public}@",
+          response.statusCode,
+          error.localizedDescription
+        )
+        if VoyagerGoogleDriveHTTPFailureMapper.isAuthorizationFailure(error) {
+          completion(.failure(error))
+        } else {
+          completion(.success(()))
+        }
+      }
+    }
+  }
+
+  func itemExists(
+    fileID: String,
+    in scope: VoyagerDriveAccountScope,
+    completion: @escaping (Result<Bool, Error>) -> Void
+  ) {
+    performRequest(
+      method: "GET",
+      path: "/drive/v3/files/\(fileID)",
+      queryItems: [URLQueryItem(name: "fields", value: "id,trashed")],
+      in: scope
+    ) { result in
+      switch result {
+      case .failure(let error):
+        completion(.failure(error))
+      case .success(let response) where response.statusCode == 404:
+        completion(.success(false))
+      case .success(let response) where response.isSuccessful:
+        // Drive still returns HTTP 200 for items in the trash.
+        completion(Result {
+          try JSONDecoder().decode(DriveFile.self, from: response.data).trashed != true
+        })
+      case .success(let response):
+        completion(.failure(self.requestFailure(response)))
+      }
+    }
+  }
+
+  func requestFailure(_ response: DriveHTTPResponse) -> Error {
+    VoyagerGoogleDriveHTTPFailureMapper.map(
+      statusCode: response.statusCode,
+      retryAfterSeconds: response.retryAfterSeconds,
+      bodyHint: String(data: response.data, encoding: .utf8)
+    ) ?? GoogleDriveServiceError.httpStatus(response.statusCode)
+  }
+
+  /// Every Drive request runs in the scope of the action that makes it: it is sent only with a
+  /// token of the scope's account, never with one the app stored afterwards.
+  func performRequest(
+    method: String,
+    path: String,
+    queryItems: [URLQueryItem] = [],
+    contentType: String? = nil,
+    body: Data? = nil,
+    in scope: VoyagerDriveAccountScope,
+    completion: @escaping (Result<DriveHTTPResponse, Error>) -> Void
+  ) {
+    withAccessToken(in: scope) { tokenResult in
+      switch tokenResult {
+      case .failure(let error):
+        completion(.failure(error))
+      case .success(let token):
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = self.apiHost
+        components.path = path
+        components.queryItems = queryItems.isEmpty ? nil : queryItems
+        guard let url = components.url else {
+          completion(.failure(GoogleDriveServiceError.invalidResponse))
+          return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.httpBody = body
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        if let contentType {
+          request.setValue(contentType, forHTTPHeaderField: "Content-Type")
+        }
+        if method != "GET" { scope.recordWrite() }
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+          if let error {
+            completion(.failure(error))
+            return
+          }
+          guard let response = response as? HTTPURLResponse else {
+            completion(.failure(GoogleDriveServiceError.invalidResponse))
+            return
+          }
+          let retryAfterSeconds = response.allHeaderFields
+            .first { ($0.key as? String)?.caseInsensitiveCompare("Retry-After") == .orderedSame }
+            .flatMap { $0.value as? String }
+            .flatMap(TimeInterval.init)
+          completion(
+            .success(
+              DriveHTTPResponse(
+                data: data ?? Data(),
+                statusCode: response.statusCode,
+                retryAfterSeconds: retryAfterSeconds
+              )
+            )
+          )
+        }.resume()
+      }
+    }
+  }
+
+  func escapeQueryValue(_ value: String) -> String {
+    value
+      .replacingOccurrences(of: "\\", with: "\\\\")
+      .replacingOccurrences(of: "'", with: "\\'")
+  }
+}
+
+struct DriveHTTPResponse {
+  let data: Data
+  let statusCode: Int
+  let retryAfterSeconds: TimeInterval?
+
+  var isSuccessful: Bool {
+    (200..<300).contains(statusCode)
+  }
+}
+
+private struct DriveFileList: Decodable {
+  let files: [DriveFile]
+}
+
+private struct DriveFile: Decodable {
+  let id: String
+  let trashed: Bool?
+}
+
+private struct DriveCreateMetadata: Encodable {
+  let name: String
+  let mimeType: String
+  let parents: [String]?
+  let appProperties: [String: String]?
+}
+
+struct DriveUpdateMetadata: Encodable {
+  let name: String?
+  let appProperties: [String: String]
+}
+
+private struct DriveParentMetadata: Decodable {
+  let parents: [String]?
+  let trashed: Bool?
+}
+
+private struct DriveUploadMetadata: Decodable {
+  let id: String
+  let md5Checksum: String
+  let modifiedTime: String
+}
+
+enum GoogleDriveServiceError: LocalizedError, Equatable {
+  case httpStatus(Int)
+  case invalidResponse
+  case notConfigured
+
+  var errorDescription: String? {
+    switch self {
+    case .httpStatus(let statusCode):
+      return "Google Drive request failed (\(statusCode))"
+    case .invalidResponse:
+      return "Google Drive returned an invalid response"
+    case .notConfigured:
+      return "Google Sign-In is not configured"
+    }
+  }
+}

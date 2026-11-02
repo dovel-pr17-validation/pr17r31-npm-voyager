@@ -1,0 +1,274 @@
+/**
+ * Service for importing and exporting prompt configurations
+ * Follows enterprise best practices with proper validation and error handling
+ * Extracted from prompt manager to follow DRY principle
+ */
+import { AppError, ErrorCode } from '@/core/errors/AppError';
+import { type Result, StorageKeys } from '@/core/types/common';
+import { EXTENSION_VERSION } from '@/core/utils/version';
+
+import type { PromptExportPayload, PromptItem } from '../types/backup';
+
+const EXPORT_FORMAT = 'gemini-voyager.prompts.v1' as const;
+
+function generatePromptId(): string {
+  return `prompt-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function normalizeTags(tags: unknown): string[] {
+  if (!Array.isArray(tags)) return [];
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const tag of tags) {
+    const normalized = String(tag).trim().toLowerCase();
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    result.push(normalized);
+  }
+
+  return result;
+}
+
+function normalizePromptItem(value: unknown): PromptItem | null {
+  if (!value || typeof value !== 'object') return null;
+
+  const item = value as Record<string, unknown>;
+  const text = typeof item.text === 'string' ? item.text.trim() : '';
+  if (!text) return null;
+
+  const prompt: PromptItem = {
+    id: typeof item.id === 'string' && item.id ? item.id : generatePromptId(),
+    text,
+    tags: normalizeTags(item.tags),
+    // An unknown creation time is 0, the oldest edit time a merge can see, so a
+    // timeless copy from an old file never beats a timestamped local edit. It is
+    // not left out: every prompt validator, old and new, requires a number.
+    createdAt:
+      typeof item.createdAt === 'number' && Number.isFinite(item.createdAt) ? item.createdAt : 0,
+  };
+
+  if (typeof item.updatedAt === 'number' && Number.isFinite(item.updatedAt)) {
+    prompt.updatedAt = item.updatedAt;
+  }
+
+  const name = typeof item.name === 'string' ? item.name.trim() : '';
+  if (name) prompt.name = name;
+
+  // `null` is an explicit unpin and must survive; an absent field stays absent.
+  if (
+    item.pinnedAt === null ||
+    (typeof item.pinnedAt === 'number' && Number.isFinite(item.pinnedAt))
+  ) {
+    prompt.pinnedAt = item.pinnedAt;
+  }
+
+  return prompt;
+}
+
+function hasChromePromptStorage(): boolean {
+  return (
+    typeof chrome !== 'undefined' && !!chrome.storage?.local?.get && !!chrome.storage.local.set
+  );
+}
+
+/**
+ * Service for handling prompt import/export operations
+ */
+export class PromptImportExportService {
+  /**
+   * Export prompt data to a JSON payload
+   * Uses centralized version management to ensure consistency
+   */
+  static exportToPayload(items: PromptItem[]): PromptExportPayload {
+    return {
+      format: EXPORT_FORMAT,
+      exportedAt: new Date().toISOString(),
+      version: EXTENSION_VERSION,
+      items,
+    };
+  }
+
+  /**
+   * Validate import payload format and structure
+   */
+  static validatePayload(payload: unknown): Result<PromptExportPayload> {
+    let rawItems: unknown[] | null = null;
+
+    if (Array.isArray(payload)) {
+      rawItems = payload;
+    } else if (payload && typeof payload === 'object') {
+      const p = payload as Record<string, unknown>;
+      if (p.format !== EXPORT_FORMAT && !Array.isArray(p.items)) {
+        return {
+          success: false,
+          error: new AppError(
+            ErrorCode.VALIDATION_ERROR,
+            `Unsupported format: expected "${EXPORT_FORMAT}", got "${p.format}"`,
+            { format: p.format },
+          ),
+        };
+      }
+      rawItems = Array.isArray(p.items) ? p.items : [];
+    } else {
+      return {
+        success: false,
+        error: new AppError(ErrorCode.VALIDATION_ERROR, 'Invalid payload: expected an object', {
+          payload,
+        }),
+      };
+    }
+
+    if (rawItems.length === 0) {
+      return {
+        success: false,
+        error: new AppError(
+          ErrorCode.VALIDATION_ERROR,
+          'Invalid "items" field: expected a non-empty array',
+          { items: rawItems },
+        ),
+      };
+    }
+
+    const items = rawItems.map(normalizePromptItem).filter((item): item is PromptItem => !!item);
+    if (items.length === 0) {
+      return {
+        success: false,
+        error: new AppError(ErrorCode.VALIDATION_ERROR, 'Import file contains no valid prompts', {
+          items: rawItems,
+        }),
+      };
+    }
+
+    return {
+      success: true,
+      data: this.exportToPayload(items),
+    };
+  }
+
+  /**
+   * Load prompts from localStorage
+   */
+  static async loadPrompts(): Promise<Result<PromptItem[]>> {
+    try {
+      if (!hasChromePromptStorage()) {
+        const raw = localStorage.getItem(StorageKeys.PROMPT_ITEMS);
+        if (raw === null) {
+          return {
+            success: true,
+            data: [],
+          };
+        }
+
+        const localItems = JSON.parse(raw) as PromptItem[];
+        return {
+          success: true,
+          data: Array.isArray(localItems) ? localItems : [],
+        };
+      }
+
+      const result = await new Promise<Record<string, unknown>>((resolve, reject) => {
+        chrome.storage.local.get([StorageKeys.PROMPT_ITEMS], (items) => {
+          if (chrome.runtime?.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+            return;
+          }
+          resolve(items);
+        });
+      });
+
+      const items = result[StorageKeys.PROMPT_ITEMS];
+      return {
+        success: true,
+        data: Array.isArray(items) ? items : [],
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: new AppError(
+          ErrorCode.STORAGE_READ_FAILED,
+          'Failed to load prompts from extension storage',
+          { key: StorageKeys.PROMPT_ITEMS },
+          error instanceof Error ? error : undefined,
+        ),
+      };
+    }
+  }
+
+  /**
+   * Generate filename for export with timestamp
+   */
+  static generateExportFilename(): string {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = pad(d.getMonth() + 1);
+    const day = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const mm = pad(d.getMinutes());
+    const ss = pad(d.getSeconds());
+    return `gemini-voyager-prompts-${y}${m}${day}-${hh}${mm}${ss}.json`;
+  }
+
+  /**
+   * Export prompts to JSON string
+   */
+  static async exportToJSON(): Promise<Result<string>> {
+    const result = await this.loadPrompts();
+    if (!result.success) {
+      return result;
+    }
+
+    const payload = this.exportToPayload(result.data);
+    return {
+      success: true,
+      data: JSON.stringify(payload, null, 2),
+    };
+  }
+
+  /**
+   * Download JSON file to user's computer
+   */
+  static downloadJSON(payload: PromptExportPayload, filename?: string): void {
+    const data = JSON.stringify(payload, null, 2);
+    const blob = new Blob([data], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || this.generateExportFilename();
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      try {
+        document.body.removeChild(a);
+      } catch {
+        /* ignore */
+      }
+      URL.revokeObjectURL(url);
+    }, 0);
+  }
+
+  /**
+   * Read and parse JSON file from user upload
+   */
+  static async readJSONFile(file: File): Promise<Result<unknown>> {
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      return {
+        success: true,
+        data: parsed,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: new AppError(
+          ErrorCode.VALIDATION_ERROR,
+          'Failed to parse JSON file',
+          { fileName: file.name },
+          error instanceof Error ? error : undefined,
+        ),
+      };
+    }
+  }
+}

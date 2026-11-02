@@ -1,0 +1,467 @@
+/* Floating folder panel, rendered inside its shadow root.
+ * The host carries the panel geometry plus `data-gv-scheme` and `data-gv-rtl`,
+ * mirrored from the page, because page selectors cannot reach this tree.
+ * The host itself is in the page's tree, and any page rule that matches it
+ * (`* {}`, `div {}`, a reset) beats a normal `:host` declaration whatever its
+ * specificity. Host-only rules are therefore all `!important`, which reverses
+ * that order; custom properties stay normal because no page rule sets them.
+ * Keep left/top/width/height inline; important host geometry would block drag and resize. */
+/* ─── Floating folder panel ────────────────────────────────────────────── */
+:host {
+  position: fixed !important;
+  /* Below modal folder dialogs (…46) and shared feedback (…47): a panel mounted later never covers either. */
+  z-index: 2147483645 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: #1f2025 !important;
+  color: #e8eaed !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(129, 140, 248, 0.35) !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4) !important;
+  overflow: hidden !important;
+  font-family: 'Google Sans', Roboto, Arial, sans-serif !important;
+  font-size: 13px !important;
+}
+
+.gv-floating-folder-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  cursor: grab;
+  user-select: none;
+  background: rgba(0, 0, 0, 0.24);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  touch-action: none;
+}
+
+.gv-floating-folder-panel__header--dragging {
+  cursor: grabbing;
+}
+
+.gv-floating-folder-panel__title {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.gv-floating-folder-panel__close {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.gv-floating-folder-panel__close:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.gv-floating-folder-panel__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+
+.gv-floating-folder-panel__empty {
+  text-align: center;
+  padding: 24px 12px;
+  opacity: 0.6;
+  font-size: 12px;
+}
+
+.gv-floating-folder-panel__folder {
+  display: flex;
+  flex-direction: column;
+}
+
+.gv-floating-folder-panel__folder-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px 6px 8px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+
+.gv-floating-folder-panel__folder-header:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.gv-floating-folder-panel__caret {
+  font-size: 10px;
+  opacity: 0.6;
+  width: 12px;
+  display: inline-flex;
+  justify-content: center;
+}
+
+.gv-floating-folder-panel__folder-name {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.gv-floating-folder-panel__count {
+  font-size: 11px;
+  opacity: 0.55;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.gv-floating-folder-panel__folder-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.gv-floating-folder-panel__conv {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 5px 10px 5px 24px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font-family: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  border-radius: 4px;
+}
+
+.gv-floating-folder-panel__conv:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+:host([data-gv-scheme='light']) {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  border-color: rgba(99, 102, 241, 0.28) !important;
+  box-shadow: 0 16px 48px rgba(15, 23, 42, 0.22) !important;
+}
+
+:host([data-gv-scheme='light']) .gv-floating-folder-panel__header {
+  background: rgba(99, 102, 241, 0.06);
+  border-bottom-color: rgba(15, 23, 42, 0.08);
+}
+
+:host([data-gv-scheme='light']) .gv-floating-folder-panel__folder-header:hover {
+  background: rgba(15, 23, 42, 0.04);
+}
+
+:host([data-gv-scheme='light']) .gv-floating-folder-panel__conv:hover {
+  background: rgba(15, 23, 42, 0.05);
+}
+
+:host([data-gv-scheme='light']) .gv-floating-folder-panel__count {
+  background: rgba(15, 23, 42, 0.08);
+}
+
+/* ─── Floating folder panel parity controls ────────────────────────────── */
+.gv-floating-folder-panel__header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.gv-floating-folder-panel__icon-button,
+.gv-floating-folder-panel__caret {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.gv-floating-folder-panel__icon-button {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  font-size: 15px;
+  opacity: 0.72;
+}
+
+.gv-floating-folder-panel__icon-button:hover,
+.gv-floating-folder-panel__icon-button:focus-visible,
+.gv-floating-folder-panel__caret:hover,
+.gv-floating-folder-panel__caret:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  opacity: 1;
+  outline: none;
+}
+
+.gv-floating-folder-panel__icon-button--create {
+  font-size: 17px;
+}
+
+.gv-floating-folder-panel__icon-button--add-child,
+.gv-floating-folder-panel__icon-button--star,
+.gv-floating-folder-panel__icon-button--remove {
+  opacity: 0;
+}
+
+.gv-floating-folder-panel__folder-header:hover .gv-floating-folder-panel__icon-button--add-child,
+.gv-floating-folder-panel__folder-header:focus-within
+  .gv-floating-folder-panel__icon-button--add-child,
+.gv-floating-folder-panel__conv:hover .gv-floating-folder-panel__icon-button--star,
+.gv-floating-folder-panel__conv:focus-within .gv-floating-folder-panel__icon-button--star,
+.gv-floating-folder-panel__conv:hover .gv-floating-folder-panel__icon-button--remove,
+.gv-floating-folder-panel__conv:focus-within .gv-floating-folder-panel__icon-button--remove,
+.gv-floating-folder-panel__icon-button--active {
+  opacity: 1;
+}
+
+.gv-floating-folder-panel__icon-button--active,
+.gv-floating-folder-panel__icon-button--star:hover {
+  color: #fdd663;
+}
+
+.gv-floating-folder-panel__icon-button--remove:hover {
+  color: #f87171;
+}
+
+.gv-floating-folder-panel__folder-header {
+  min-height: 32px;
+  position: relative;
+}
+
+.gv-floating-folder-panel__folder-header--dragging,
+.gv-floating-folder-panel__conv--dragging {
+  opacity: 0.58;
+}
+
+.gv-floating-folder-panel__folder-color {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex: 0 0 8px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.gv-floating-folder-panel__folder-name-wrap {
+  min-width: 0;
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+}
+
+.gv-floating-folder-panel__pin {
+  width: 10px;
+  color: #8ab4f8;
+  font-size: 8px;
+  line-height: 1;
+  text-align: center;
+}
+
+.gv-floating-folder-panel__inline-form {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  width: 100%;
+  padding: 4px 8px;
+}
+
+.gv-floating-folder-panel__inline-form--root {
+  padding-inline: 10px;
+}
+
+.gv-floating-folder-panel__inline-input {
+  min-width: 0;
+  flex: 1;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid rgba(138, 180, 248, 0.38);
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  font: inherit;
+  padding: 0 8px;
+  outline: none;
+}
+
+.gv-floating-folder-panel__inline-input:focus {
+  border-color: #8ab4f8;
+  box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.18);
+}
+
+.gv-floating-folder-panel__conv {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  padding-block: 3px;
+  padding-inline-end: 6px;
+}
+
+.gv-floating-folder-panel__conv-title {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  padding: 3px 0;
+}
+
+.gv-floating-folder-panel__context-menu {
+  position: fixed;
+  z-index: 2147483647;
+  min-width: 174px;
+  max-width: 240px;
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #25262d;
+  color: #e8eaed;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.38);
+}
+
+.gv-floating-folder-panel__menu-item {
+  appearance: none;
+  border: 0;
+  width: 100%;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  font: inherit;
+  min-height: 30px;
+  padding: 6px 8px;
+  text-align: start;
+}
+
+.gv-floating-folder-panel__menu-item:hover,
+.gv-floating-folder-panel__menu-item:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
+.gv-floating-folder-panel__menu-item--danger {
+  color: #f87171;
+}
+
+.gv-floating-folder-panel__color-section {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin: 4px 0;
+  padding: 7px 8px;
+}
+
+.gv-floating-folder-panel__color-title {
+  font-size: 11px;
+  opacity: 0.72;
+  margin-bottom: 7px;
+}
+
+.gv-floating-folder-panel__color-swatches {
+  display: grid;
+  grid-template-columns: repeat(7, 20px);
+  gap: 6px;
+}
+
+.gv-floating-folder-panel__color-swatch {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.22);
+}
+
+.gv-floating-folder-panel__color-swatch:hover,
+.gv-floating-folder-panel__color-swatch:focus-visible,
+.gv-floating-folder-panel__color-swatch--active {
+  border-color: #e8eaed;
+  outline: none;
+}
+
+:host([data-gv-scheme='light']) .gv-floating-folder-panel__icon-button:hover,
+:host([data-gv-scheme='light']) .gv-floating-folder-panel__icon-button:focus-visible,
+:host([data-gv-scheme='light']) .gv-floating-folder-panel__caret:hover,
+:host([data-gv-scheme='light']) .gv-floating-folder-panel__caret:focus-visible {
+  background: rgba(15, 23, 42, 0.08);
+}
+
+:host([data-gv-scheme='light']) .gv-floating-folder-panel__drop-target {
+  background: rgba(59, 130, 246, 0.12) !important;
+}
+
+:host([data-gv-scheme='light']) .gv-floating-folder-panel__folder-color {
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.18);
+}
+
+:host([data-gv-scheme='light']) .gv-floating-folder-panel__inline-input {
+  background: #ffffff;
+  border-color: rgba(59, 130, 246, 0.34);
+  color: #1f2937;
+}
+
+:host([data-gv-scheme='light']) .gv-floating-folder-panel__context-menu {
+  background: #ffffff;
+  color: #1f2937;
+  border-color: rgba(15, 23, 42, 0.12);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.2);
+}
+
+:host([data-gv-scheme='light']) .gv-floating-folder-panel__menu-item:hover,
+:host([data-gv-scheme='light']) .gv-floating-folder-panel__menu-item:focus-visible {
+  background: rgba(15, 23, 42, 0.06);
+}
+
+:host([data-gv-scheme='light']) .gv-floating-folder-panel__color-section {
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+:host([data-gv-scheme='light']) .gv-floating-folder-panel__color-swatch:hover,
+:host([data-gv-scheme='light']) .gv-floating-folder-panel__color-swatch:focus-visible,
+:host([data-gv-scheme='light']) .gv-floating-folder-panel__color-swatch--active {
+  border-color: #1f2937;
+}
+
+:host([data-gv-rtl]) .gv-floating-folder-panel__body,
+:host([data-gv-rtl]) .gv-floating-folder-panel__context-menu {
+  direction: rtl;
+}
+
+:host([data-gv-rtl]) .gv-floating-folder-panel__folder-header,
+:host([data-gv-rtl]) .gv-floating-folder-panel__conv-title,
+:host([data-gv-rtl]) .gv-floating-folder-panel__menu-item {
+  text-align: right;
+}
+
+/* Isolation cannot read the page's account: the folders are hidden, and this says why. */
+.gv-folder-account-notice {
+  margin: 4px 12px 8px;
+  font-size: 12px;
+  line-height: 16px;
+  opacity: 0.72;
+}

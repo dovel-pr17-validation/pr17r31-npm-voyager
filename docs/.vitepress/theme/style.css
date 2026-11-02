@@ -1,0 +1,225 @@
+/**
+ * Customize default theme styling by overriding CSS variables:
+ * https://github.com/vuejs/vitepress/blob/main/src/client/theme-default/styles/vars.css
+ */
+
+:root {
+  /* Shadcn Primary Color (Light Mode): oklch(0.7227 0.1920 149.5793) */
+  /* Converted to approx Hex for compatibility if needed, but trying OKLCH first */
+  --vp-c-brand-1: oklch(0.7227 0.192 149.5793);
+  --vp-c-brand-2: oklch(0.65 0.192 149.5793);
+  /* Slightly darker */
+  --vp-c-brand-3: oklch(0.6 0.192 149.5793);
+  /* Even darker */
+}
+
+.dark {
+  /* Shadcn Primary Color (Dark Mode): oklch(0.7729 0.1535 163.2231) */
+  --vp-c-brand-1: oklch(0.7729 0.1535 163.2231);
+  --vp-c-brand-2: oklch(0.82 0.1535 163.2231);
+  /* Slightly lighter */
+  --vp-c-brand-3: oklch(0.87 0.1535 163.2231);
+  /* Even lighter */
+}
+
+/* Force 4-column layout for features on large screens */
+@media (min-width: 1280px) {
+  .VPFeatures .VPFeature.item {
+    width: 25%;
+  }
+
+  /* Fallback selector structure just in case of version differences */
+  .VPFeatures .items .item {
+    width: 25%;
+  }
+}
+
+/* Announcement nav entry: always-on theme-color highlight.
+   The entry only exists in the DOM when ENABLED in
+   theme/composables/announcement.ts, so when ENABLED is false this selector
+   matches nothing and the styling disappears automatically.
+
+   Scoping: must be `:is(.VPNavBarMenu, .VPNavScreenMenu) a[href*='…']`,
+   not a bare `a[href*='…']`. Once the user is on a `#announcement` URL,
+   VitePress's language picker generates locale-switch links that preserve
+   the hash (`/zh/#announcement`, `/ja/#announcement`, …), and a bare
+   selector ends up highlighting every language in the dropdown.
+
+   Desktop: radial background glow behind the text (uses ::before).
+   Mobile menu rows are full-width, so a positioned ::before stretches into
+   an awkward horizontal blob — there we swap to a text-shadow glow which
+   naturally hugs the text. */
+:is(.VPNavBarMenu, .VPNavScreenMenu) a[href*='#announcement'] {
+  position: relative;
+  isolation: isolate;
+  color: var(--vp-c-brand-1) !important;
+  font-weight: 600 !important;
+  transition: color 0.3s ease;
+}
+
+:is(.VPNavBarMenu, .VPNavScreenMenu) a[href*='#announcement']:hover {
+  color: var(--vp-c-brand-2) !important;
+}
+
+@media (min-width: 768px) {
+  :is(.VPNavBarMenu, .VPNavScreenMenu) a[href*='#announcement']::before {
+    content: '';
+    position: absolute;
+    inset: 6px -4px;
+    z-index: -1;
+    border-radius: 999px;
+    background: radial-gradient(
+      ellipse at center,
+      color-mix(in oklch, var(--vp-c-brand-1) 24%, transparent) 0%,
+      color-mix(in oklch, var(--vp-c-brand-1) 10%, transparent) 45%,
+      transparent 80%
+    );
+    filter: blur(3px);
+    animation: gv-announce-nav-glow 4s ease-in-out infinite;
+    transition: filter 0.3s ease;
+  }
+
+  :is(.VPNavBarMenu, .VPNavScreenMenu) a[href*='#announcement']:hover::before {
+    filter: blur(2px) brightness(1.2);
+  }
+}
+
+@keyframes gv-announce-nav-glow {
+  0%,
+  100% {
+    opacity: 0.65;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+@media (max-width: 767px) {
+  :is(.VPNavBarMenu, .VPNavScreenMenu) a[href*='#announcement'] {
+    animation: gv-announce-nav-text-glow 4s ease-in-out infinite;
+  }
+}
+
+@keyframes gv-announce-nav-text-glow {
+  0%,
+  100% {
+    text-shadow:
+      0 0 8px color-mix(in oklch, var(--vp-c-brand-1) 35%, transparent),
+      0 0 16px color-mix(in oklch, var(--vp-c-brand-1) 18%, transparent);
+  }
+  50% {
+    text-shadow:
+      0 0 12px color-mix(in oklch, var(--vp-c-brand-1) 60%, transparent),
+      0 0 22px color-mix(in oklch, var(--vp-c-brand-1) 40%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.VPNavBarMenu, .VPNavScreenMenu) a[href*='#announcement']::before {
+    animation: none;
+    opacity: 0.85;
+  }
+  :is(.VPNavBarMenu, .VPNavScreenMenu) a[href*='#announcement'] {
+    animation: none;
+  }
+}
+
+/* Generated pages (`docs/.vitepress/changelog.ts`, `pluginsPage.ts`): a platform's
+   mark sits beside its name at text size, as in the extension's own release notes. */
+.vp-doc .gv-site-mark {
+  display: inline;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+  margin-inline-end: 0.28em;
+}
+
+.vp-doc .gv-changelog-date {
+  margin-top: -8px;
+  color: var(--vp-c-text-2);
+  font-size: 14px;
+}
+
+/* A note's `:kbd:` shortcut (`changelog.ts`, redrawn for the reader by
+   `theme/shortcutKeys.ts`). Left to right inside RTL text, like the extension's. */
+.vp-doc .gv-changelog-kbd {
+  display: inline-block;
+  direction: ltr;
+  unicode-bidi: isolate;
+  min-width: 1.6em;
+  padding: 0 6px;
+  border: 1px solid var(--vp-c-divider);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-1);
+  font-family: var(--vp-font-family-base);
+  font-size: 0.875em;
+  font-weight: 500;
+  line-height: 1.55;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Plugin table (`docs/.vitepress/pluginsPage.ts`). Narrow site columns, each
+   mark above its name, leave the feature names room for one line. */
+.vp-doc .gv-plugins-table th {
+  white-space: nowrap;
+}
+
+.vp-doc .gv-plugins-table :is(th, td):not(:first-child) {
+  padding-inline: 8px;
+}
+
+/* Feature names read as one column of text; a faint underline marks the ones
+   with a guide page, and they take the brand colour on hover. */
+.vp-doc .gv-plugins-table td:first-child a {
+  color: inherit;
+  font-weight: inherit;
+  text-decoration: underline dotted var(--vp-c-text-3);
+  text-underline-offset: 4px;
+}
+
+.vp-doc .gv-plugins-table td:first-child a:hover {
+  color: var(--vp-c-brand-1);
+  text-decoration-color: currentColor;
+}
+
+.vp-doc .gv-plugins-table th .gv-site-mark {
+  display: block;
+  width: 1.25em;
+  height: 1.25em;
+  margin: 0 auto 2px;
+}
+
+.vp-doc .gv-plugins-tick {
+  color: var(--vp-c-brand-1);
+  font-weight: 700;
+}
+
+/* A plugin that runs without the reader switching it on. */
+.vp-doc .gv-plugins-on {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5em;
+  height: 1.5em;
+  border-radius: 50%;
+  /* The theme's green brand has no matching `--vp-c-brand-soft`. */
+  background: color-mix(in srgb, var(--vp-c-brand-1) 18%, transparent);
+}
+
+.vp-doc .gv-plugins-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--vp-c-text-2);
+  font-size: 14px;
+}
+
+.vp-doc .gv-plugins-disclaimer {
+  color: var(--vp-c-text-3);
+  font-size: 12px;
+}

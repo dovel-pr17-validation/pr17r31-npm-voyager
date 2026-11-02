@@ -1,0 +1,150 @@
+import { describe, expect, it } from 'vitest';
+
+import { OFFICIAL_PLUGIN_IDS } from '../sites/featureOwners';
+import type { PluginManifest } from '../types';
+import {
+  partitionPluginOriginPatterns,
+  pluginToOriginPatternsForActiveUrl,
+  pluginsToOriginPatterns,
+} from './siteRegistration';
+
+function mk(matches: string[]): PluginManifest {
+  return {
+    id: 'x',
+    name: 'x',
+    version: '1.0.0',
+    description: 'd',
+    author: 'a',
+    category: 'render-fix',
+    license: 'MIT',
+    engine: '>=1.0.0',
+    tier: 'declarative',
+    matches,
+    contributes: {},
+  };
+}
+
+describe('pluginsToOriginPatterns', () => {
+  it('derives an origin pattern from a match pattern', () => {
+    expect(pluginsToOriginPatterns([mk(['https://claude.ai/*'])])).toEqual(['https://claude.ai/*']);
+  });
+
+  it('dedupes and sorts origins across plugins', () => {
+    const result = pluginsToOriginPatterns([
+      mk(['https://claude.ai/*']),
+      mk(['https://chatgpt.com/*', 'https://claude.ai/*']),
+    ]);
+    expect(result).toEqual(['https://chatgpt.com/*', 'https://claude.ai/*']);
+  });
+
+  it('normalizes a scheme wildcard to https', () => {
+    expect(pluginsToOriginPatterns([mk(['*://claude.ai/*'])])).toEqual(['https://claude.ai/*']);
+  });
+
+  it('ignores <all_urls>', () => {
+    expect(pluginsToOriginPatterns([mk(['<all_urls>'])])).toEqual([]);
+  });
+});
+
+describe('pluginToOriginPatternsForActiveUrl', () => {
+  const chatgptPlugin = mk(['https://chatgpt.com/*', 'https://chat.openai.com/*']);
+  const deepseekPlugin = mk(['https://chat.deepseek.com/*', 'https://chat.deepseek.com/a/chat/*']);
+  const claudeArtifactPlugin = mk([
+    'https://claude.ai/*',
+    'https://*.frame.claudeusercontent.com/*',
+  ]);
+
+  it('never requests a host grant or new injection for the shared visual effects builtin', () => {
+    const visualEffects = { ...mk(['<all_urls>']), id: OFFICIAL_PLUGIN_IDS.visualEffects };
+    expect(pluginsToOriginPatterns([visualEffects])).toEqual([]);
+    for (const url of [
+      undefined,
+      'https://gemini.google.com/app',
+      'https://aistudio.google.com/prompts',
+      'https://chatgpt.com/c/1',
+      'https://claude.ai/chat/1',
+      'https://chat.deepseek.com/a/chat/s/1',
+      'http://localhost:3000/',
+      'https://custom.example/',
+    ]) {
+      expect(pluginToOriginPatternsForActiveUrl(visualEffects, url)).toEqual([]);
+    }
+  });
+
+  it('requests only the currently open ChatGPT origin', () => {
+    expect(
+      pluginToOriginPatternsForActiveUrl(
+        chatgptPlugin,
+        'https://chatgpt.com/c/current-conversation',
+      ),
+    ).toEqual(['https://chatgpt.com/*']);
+  });
+
+  it('keeps all declared origins outside the plugin site', () => {
+    expect(
+      pluginToOriginPatternsForActiveUrl(chatgptPlugin, 'https://gemini.google.com/app'),
+    ).toEqual(['https://chat.openai.com/*', 'https://chatgpt.com/*']);
+  });
+
+  it('includes Claude artifact frames when enabling from the parent site', () => {
+    expect(
+      pluginToOriginPatternsForActiveUrl(
+        claudeArtifactPlugin,
+        'https://claude.ai/code/artifact/example',
+      ),
+    ).toEqual(['https://*.frame.claudeusercontent.com/*', 'https://claude.ai/*']);
+  });
+
+  it('requests only the DeepSeek chat origin from a DeepSeek page', () => {
+    expect(
+      pluginToOriginPatternsForActiveUrl(
+        deepseekPlugin,
+        'https://chat.deepseek.com/a/chat/s/current',
+      ),
+    ).toEqual(['https://chat.deepseek.com/*']);
+  });
+
+  it('does not expand DeepSeek permission scope for an unrelated active page', () => {
+    expect(pluginToOriginPatternsForActiveUrl(deepseekPlugin, 'https://example.com/')).toEqual([
+      'https://chat.deepseek.com/*',
+    ]);
+  });
+});
+
+describe('partitionPluginOriginPatterns', () => {
+  it('limits child-frame injection to explicit companion origins', () => {
+    expect(
+      partitionPluginOriginPatterns([
+        'https://claude.ai/*',
+        'https://*.frame.claudeusercontent.com/*',
+        'https://chatgpt.com/*',
+      ]),
+    ).toEqual({
+      topFrameOrigins: ['https://claude.ai/*', 'https://chatgpt.com/*'],
+      embeddedFrameOrigins: ['https://*.frame.claudeusercontent.com/*'],
+    });
+  });
+});
+
+describe('native surfaces (Gemini, AI Studio)', () => {
+  const geminiAndClaude = mk([
+    'https://gemini.google.com/*',
+    'https://business.gemini.google/*',
+    'https://aistudio.google.com/*',
+    'https://claude.ai/*',
+  ]);
+
+  it('never registers or requests a native surface origin, which the manifest already injects', () => {
+    expect(pluginsToOriginPatterns([geminiAndClaude])).toEqual(['https://claude.ai/*']);
+    expect(pluginsToOriginPatterns([mk(['https://gemini.google.com/app/*'])])).toEqual([]);
+  });
+
+  it('needs no grant when enabled from a Gemini or AI Studio tab', () => {
+    expect(
+      pluginToOriginPatternsForActiveUrl(geminiAndClaude, 'https://gemini.google.com/app/1'),
+    ).toEqual([]);
+    expect(
+      pluginToOriginPatternsForActiveUrl(geminiAndClaude, 'https://aistudio.google.com/prompts'),
+    ).toEqual([]);
+  });
+});

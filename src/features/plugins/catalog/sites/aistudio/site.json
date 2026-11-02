@@ -1,0 +1,36 @@
+{
+  "$schema": "https://voyager.nagi.fun/site.schema.json",
+  "id": "aistudio",
+  "label": "AI Studio",
+  "matches": ["https://aistudio.google.com/*", "https://aistudio.google.cn/*"],
+  "selectors": {
+    "userTurn": ".user-prompt-container, [data-turn-role=\"User\"]",
+    "assistantTurn": ".model-prompt-container, [data-turn-role=\"Model\"]",
+    "composer": "ms-prompt-box textarea[formcontrolname=promptText], ms-chunk-input textarea, textarea[aria-label]",
+    "sidebar": ".gv-aistudio .gv-folder-container",
+    "composerRoot": "ms-prompt-box",
+    "sendButton": "ms-run-button > button"
+  },
+  "theme": {
+    "hostSelector": "body",
+    "lightSelector": "body.light-theme",
+    "darkSelector": "body.dark-theme"
+  },
+  "capabilities": ["chat", "sidebar", "composer", "darkMode"],
+  "routeWords": ["prompts", "new_chat", "library", "apps", "live", "gallery"],
+  "accountSlots": true,
+  "conversationRoutes": ["/prompts/:id"],
+  "prompt": {
+    "triggerSpot": "fab",
+    "highlightScope": "aistudio"
+  },
+  "folders": {
+    "format": 1,
+    "sidebar": ".nav-content.v3-left-nav",
+    "rows": {
+      "row": "a[href^=\"/prompts/\"], a[href^=\"/u/\"][href*=\"/prompts/\"], a[href*=\"://aistudio.google.com/prompts/\"], a[href*=\"://aistudio.google.com/u/\"][href*=\"/prompts/\"], a[href*=\"://aistudio.google.cn/prompts/\"], a[href*=\"://aistudio.google.cn/u/\"][href*=\"/prompts/\"]",
+      "portaled": ".cdk-overlay-container, .cdk-overlay-pane, [role=\"menu\"], [role=\"listbox\"], [role=\"dialog\"]",
+      "drag": "html5"
+    }
+  }
+}

@@ -1,0 +1,390 @@
+/* ===== Changelog Modal and Edge final-version notice =====
+ * Both are Voyager dialogs: the page ui tokens (005) for surface, ink, border
+ * and font, so light and dark come from html[data-gv-scheme] alone; the brand
+ * only on the one primary action, version tag, links and quote rule; buttons
+ * in the confirm card's shape (28px, 8px radius, 500). */
+
+.gv-edge-final-version-notice {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: oklch(0 0 0 / 0.45);
+  backdrop-filter: blur(4px);
+  font-family: var(--gv-ui-font, ui-sans-serif, system-ui, sans-serif);
+  animation: gv-fade-in 0.2s ease-out;
+}
+
+.gv-edge-final-version-notice__dialog {
+  width: min(92vw, 460px);
+  max-height: min(80vh, 520px);
+  overflow: auto;
+  border: 1px solid var(--gv-ui-border, oklch(0.92 0.004 250 / 0.7));
+  border-radius: 16px;
+  background: var(--gv-ui-surface, oklch(0.995 0.002 250));
+  color: var(--gv-ui-text, oklch(0.14 0.004 285));
+  box-shadow: var(--gv-ui-shadow, 0 6px 20px oklch(0 0 0 / 0.16));
+  animation: gv-slide-up 0.3s ease-out;
+}
+
+.gv-edge-final-version-notice__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px 20px 12px;
+  border-bottom: 1px solid var(--gv-ui-border, oklch(0.92 0.004 250 / 0.7));
+}
+
+.gv-edge-final-version-notice__title {
+  flex: 1;
+  margin: 0;
+  color: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.gv-edge-final-version-notice__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--gv-ui-text-muted, oklch(0.45 0.01 270));
+  cursor: pointer;
+  font: 500 15px/1 var(--gv-ui-font, ui-sans-serif, system-ui, sans-serif);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.gv-edge-final-version-notice__close:hover {
+  background: var(--gv-ui-hover, oklch(0.14 0.004 285 / 0.06));
+  color: var(--gv-ui-text, oklch(0.14 0.004 285));
+}
+
+.gv-edge-final-version-notice__body {
+  padding: 16px 20px 8px;
+  color: var(--gv-ui-text-muted, oklch(0.45 0.01 270));
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.gv-edge-final-version-notice__body p {
+  margin: 0 0 12px;
+}
+
+.gv-edge-final-version-notice__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px 20px;
+}
+
+.gv-edge-final-version-notice__btn {
+  box-sizing: border-box;
+  min-height: 28px;
+  padding: 4px 12px;
+  border: 1px solid var(--gv-ui-border, oklch(0.92 0.004 250 / 0.7));
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: 500 13px/18px var(--gv-ui-font, ui-sans-serif, system-ui, sans-serif);
+  white-space: normal;
+  transition:
+    background-color 0.15s ease,
+    filter 0.15s ease;
+}
+
+.gv-edge-final-version-notice__btn--secondary:hover {
+  background: var(--gv-ui-surface-hover, oklch(0.97 0.003 250));
+}
+
+.gv-edge-final-version-notice__btn--primary {
+  border-color: transparent;
+  background: var(--gv-ui-primary, oklch(0.601 0.1 140));
+  color: var(--gv-ui-primary-fg, #ffffff);
+}
+
+.gv-edge-final-version-notice__btn--primary:hover {
+  filter: brightness(1.06);
+}
+
+.gv-edge-final-version-notice__btn:focus-visible,
+.gv-edge-final-version-notice__close:focus-visible {
+  outline: 2px solid var(--gv-ui-focus-ring, oklch(0.601 0.1 140));
+  outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+  .gv-edge-final-version-notice {
+    align-items: flex-end;
+    padding: 12px;
+  }
+
+  .gv-edge-final-version-notice__actions {
+    flex-direction: column-reverse;
+  }
+
+  .gv-edge-final-version-notice__btn {
+    width: 100%;
+  }
+}
+
+.gv-changelog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: oklch(0 0 0 / 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: gv-fade-in 0.2s ease-out;
+}
+
+.gv-changelog-dialog {
+  min-width: 360px;
+  max-width: 520px;
+  width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--gv-ui-border, oklch(0.92 0.004 250 / 0.7));
+  border-radius: 16px;
+  background: var(--gv-ui-surface, oklch(0.995 0.002 250));
+  color: var(--gv-ui-text, oklch(0.14 0.004 285));
+  box-shadow: var(--gv-ui-shadow, 0 6px 20px oklch(0 0 0 / 0.16));
+  font-family: var(--gv-ui-font, ui-sans-serif, system-ui, sans-serif);
+  animation: gv-slide-up 0.3s ease-out;
+}
+
+.gv-changelog-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 20px 14px 24px;
+  border-bottom: 1px solid var(--gv-ui-border, oklch(0.92 0.004 250 / 0.7));
+}
+
+.gv-changelog-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: inherit;
+}
+
+.gv-changelog-version {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gv-ui-primary, oklch(0.601 0.1 140)) 12%, transparent);
+  color: var(--gv-ui-primary, oklch(0.601 0.1 140));
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.gv-changelog-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-inline-start: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--gv-ui-text-muted, oklch(0.45 0.01 270));
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.gv-changelog-close:hover {
+  background: var(--gv-ui-hover, oklch(0.14 0.004 285 / 0.06));
+  color: var(--gv-ui-text, oklch(0.14 0.004 285));
+}
+
+.gv-changelog-close:focus-visible {
+  outline: 2px solid var(--gv-ui-focus-ring, oklch(0.601 0.1 140));
+  outline-offset: 2px;
+}
+
+.gv-changelog-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: color-mix(
+    in srgb,
+    var(--gv-ui-text, oklch(0.14 0.004 285)) 84%,
+    var(--gv-ui-surface, oklch(0.995 0.002 250))
+  );
+}
+
+.gv-changelog-body h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 10px;
+  color: var(--gv-ui-text, oklch(0.14 0.004 285));
+}
+
+.gv-changelog-body strong {
+  color: var(--gv-ui-text, oklch(0.14 0.004 285));
+  font-weight: 600;
+}
+
+/* Highlights lead-in — the bold sentence opening the first paragraph
+ * of the changelog body (e.g. "**Important update — please skim…**"
+ * / "**重要更新，建议花一分钟浏览。**"). The markdown source has no
+ * separate "### Highlights" heading; the bold strong tag IS the heading,
+ * in the accent so it reads as the primary pointer. */
+.gv-changelog-body > p:first-child strong:first-child {
+  color: var(--gv-ui-primary, oklch(0.601 0.1 140));
+}
+
+.gv-changelog-body ul {
+  margin: 0 0 12px;
+  padding-left: 20px;
+}
+
+.gv-changelog-body li {
+  margin-bottom: 6px;
+}
+
+.gv-changelog-body code {
+  font-size: 13px;
+  background: color-mix(in srgb, var(--gv-ui-text, oklch(0.14 0.004 285)) 7%, transparent);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.gv-changelog-body p {
+  margin: 0 0 12px;
+}
+
+/* The opening quote: a brand rule and tint, so a custom accent reaches it. */
+.gv-changelog-body > .gv-changelog-quote {
+  display: block;
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--gv-ui-primary, oklch(0.601 0.1 140));
+  border-radius: 0 8px 8px 0;
+  background: color-mix(in srgb, var(--gv-ui-primary, oklch(0.601 0.1 140)) 10%, transparent);
+  color: var(--gv-ui-text, oklch(0.14 0.004 285));
+}
+
+.gv-changelog-body > .gv-changelog-quote p {
+  margin: 0;
+}
+
+/* A platform's own mark, set into the sentence that names it: text-sized, on
+   the text's baseline, and painted in the text colour so it works in both
+   schemes. */
+.gv-changelog-logo {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+  margin-inline-end: 0.28em;
+  flex: none;
+}
+
+.gv-changelog-body img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 8px 0;
+  cursor: zoom-in;
+  transition: opacity 0.15s;
+}
+
+.gv-changelog-body img:hover {
+  opacity: 0.9;
+}
+
+/* Feature screenshots sit inside a changelog bullet: show a thumbnail, not a
+   full-width banner. Click still opens the lightbox at full size. */
+.gv-changelog-body li img {
+  display: block;
+  width: 300px;
+  max-width: 100%;
+  margin: 8px 0 2px;
+  border: 1px solid var(--gv-ui-border, oklch(0.92 0.004 250 / 0.7));
+}
+
+.gv-changelog-body a {
+  color: var(--gv-ui-primary, oklch(0.601 0.1 140));
+  text-decoration: underline;
+  text-decoration-color: color-mix(
+    in srgb,
+    var(--gv-ui-primary, oklch(0.601 0.1 140)) 40%,
+    transparent
+  );
+  text-underline-offset: 2px;
+}
+
+.gv-changelog-body a:hover {
+  text-decoration-color: currentColor;
+}
+
+.gv-changelog-footer {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 20px 16px 24px;
+  border-top: 1px solid var(--gv-ui-border, oklch(0.92 0.004 250 / 0.7));
+  gap: 12px;
+}
+
+/* Follow-me area — the gradient ribbon is the cue that "this is the follow-me
+ * block" and is kept on purpose; the CTA copy and social chips sit on it. */
+.gv-changelog-follow-area {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: linear-gradient(
+    135deg,
+    oklch(0.96 0.05 195) 0%,
+    oklch(0.95 0.06 250) 50%,
+    oklch(0.95 0.05 var(--gv-pm-brand-h, var(--gv-pm-brand-h-default))) 100%
+  );
+}
+
+html[data-gv-scheme='dark'] .gv-changelog-follow-area {
+  background: linear-gradient(
+    135deg,
+    oklch(0.35 0.06 195) 0%,
+    oklch(0.32 0.08 250) 50%,
+    oklch(0.32 0.07 var(--gv-pm-brand-h, var(--gv-pm-brand-h-default))) 100%
+  );
+}
+
+.gv-changelog-follow-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--gv-ui-text, oklch(0.14 0.004 285));
+}
+
+.gv-changelog-social-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+}

@@ -1,0 +1,391 @@
+.gv-pm-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px 14px 16px;
+  border-top: 1px solid var(--gv-ui-border);
+}
+
+/* Footer button groups */
+.gv-pm-footer-actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.gv-pm-saved-footer-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+/* Every footer control is one 28px button: a quiet bordered one, or the
+   accent-tinted primary. Colours come from the panel-scoped tokens (100), so
+   they follow the panel's own theme rather than the page's. */
+.gv-pm-saved-footer-button {
+  box-sizing: border-box;
+  width: 100%;
+  height: 28px;
+  min-width: 0;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--gv-ui-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--gv-ui-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.gv-pm-saved-footer-button svg {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+}
+
+body.gv-rtl .gv-pm-saved-footer-primary .lucide-arrow-left {
+  transform: scaleX(-1);
+}
+
+.gv-pm-saved-footer-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gv-pm-saved-footer-button:hover,
+.gv-pm-saved-export-open .gv-pm-saved-export-trigger {
+  background: var(--gv-ui-hover);
+  color: var(--gv-ui-text);
+}
+
+.gv-pm-saved-footer-primary {
+  border-color: transparent;
+  background: var(--gv-pm-brand-soft);
+  color: var(--gv-pm-brand-ink, var(--gv-pm-brand, var(--gv-pm-brand-default)));
+}
+
+.gv-pm-saved-footer-primary:hover {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--gv-pm-brand, var(--gv-pm-brand-default)) 22%, transparent);
+  color: var(--gv-pm-brand-ink, var(--gv-pm-brand, var(--gv-pm-brand-default)));
+}
+
+.gv-pm-saved-footer-button:focus-visible,
+.gv-pm-saved-export-option:focus-visible,
+.gv-pm-backup-btn:focus-visible,
+.gv-pm-settings:focus-visible,
+.gv-pm-support:focus-visible {
+  outline: 2px solid var(--gv-ui-focus-ring);
+  outline-offset: 2px;
+}
+
+.gv-pm-saved-export-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.gv-pm-saved-export-trigger .lucide-chevron-down {
+  margin-inline-start: auto;
+  transition: transform 0.15s ease;
+}
+
+.gv-pm-saved-export-open .lucide-chevron-down {
+  transform: rotate(180deg);
+}
+
+.gv-pm-saved-export-menu {
+  position: absolute;
+  inset-inline: 0;
+  bottom: calc(100% + 8px);
+  z-index: 5;
+  display: grid;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--gv-ui-border);
+  border-radius: 10px;
+  background: var(--gv-pm-surface, oklch(0.995 0.002 250));
+  box-shadow: 0 6px 20px oklch(0 0 0 / 0.2);
+}
+
+.gv-pm-saved-export-option {
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--gv-ui-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: start;
+}
+
+.gv-pm-saved-export-option svg {
+  flex: 0 0 auto;
+  pointer-events: none;
+}
+
+.gv-pm-saved-export-option:hover {
+  background: var(--gv-ui-hover);
+}
+
+.gv-pm-footer-secondary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Primary starred-library action */
+.gv-pm-backup-btn {
+  height: 28px;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: var(--gv-pm-brand-soft);
+  border: none;
+  color: var(--gv-pm-brand-ink, var(--gv-pm-brand, var(--gv-pm-brand-default)));
+  flex: 1;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  text-decoration: none;
+}
+
+.gv-pm-backup-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.gv-pm-backup-btn:hover {
+  background: color-mix(in srgb, var(--gv-pm-brand, var(--gv-pm-brand-default)) 22%, transparent);
+}
+
+.gv-pm-backup-btn:active {
+  background: color-mix(in srgb, var(--gv-pm-brand, var(--gv-pm-brand-default)) 28%, transparent);
+}
+
+/* Settings and sponsor: quiet text buttons sharing one row. */
+.gv-pm-settings,
+.gv-pm-support {
+  height: 28px;
+  border-radius: 8px;
+  padding: 0 10px;
+  background: transparent;
+  border: none;
+  color: var(--gv-ui-text-muted);
+  flex: 1 1 0;
+  min-width: 0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-decoration: none;
+}
+
+.gv-pm-settings:hover,
+.gv-pm-support:hover {
+  background: var(--gv-ui-hover);
+  color: var(--gv-ui-text);
+}
+
+/* The label is the button's own text, so the gear is drawn here as a masked
+   line icon in currentColor rather than a glyph. */
+.gv-pm-settings::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  background: currentColor;
+  -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>')
+    center / contain no-repeat;
+  mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>')
+    center / contain no-repeat;
+}
+
+.gv-pm-support svg {
+  flex: 0 0 auto;
+}
+
+.gv-pm-support-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Pin toggle. It trails the action cluster; a pinned row keeps it visible at
+ * rest, because once the other icons fade out the row still has to say why it
+ * is sitting above the divider. */
+.gv-pm-pin::before {
+  --gv-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linejoin="round"><path d="m12 3.6 2.6 5.3 5.8.85-4.2 4.1 1 5.75L12 16.9l-5.2 2.7 1-5.75-4.2-4.1 5.8-.85Z"/></svg>');
+}
+
+/* Outranks every per-theme colour above, which dresses the resting star: a
+ * pinned one is brand-coloured in light and dark alike. The `:hover` twin is
+ * what carries that past the per-theme hover rules, which match at the same
+ * specificity and would otherwise grey the star out under the cursor. */
+.gv-pm-item .gv-pm-actions > .gv-pm-pin[aria-pressed='true'],
+.gv-pm-item .gv-pm-actions > .gv-pm-pin[aria-pressed='true']:hover {
+  color: var(--gv-pm-brand-ink, var(--gv-pm-brand, var(--gv-pm-brand-default)));
+}
+
+.gv-pm-pin[aria-pressed='true']::before {
+  --gv-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black"><path d="m12 3.6 2.6 5.3 5.8.85-4.2 4.1 1 5.75L12 16.9l-5.2 2.7 1-5.75-4.2-4.1 5.8-.85Z"/></svg>');
+}
+
+/* Separates the pinned block from the rest. Rendered only when both sides have
+ * rows, so it never floats alone at the top or bottom of the list. */
+.gv-pm-pin-divider {
+  height: 1px;
+  margin: 5px 2px;
+  background: var(--gv-ui-border);
+  flex-shrink: 0;
+}
+
+.gv-pm-drag {
+  width: 10px;
+  height: 14px;
+  margin-left: -6px;
+  margin-right: 6px;
+  position: relative;
+  color: var(--gv-ui-text-muted);
+  cursor: move;
+}
+
+.gv-pm-drag::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black"><circle cx="9" cy="5" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="9" cy="19" r="1.6"/><circle cx="15" cy="5" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="15" cy="19" r="1.6"/></svg>')
+    center / 14px 14px no-repeat;
+  mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black"><circle cx="9" cy="5" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="9" cy="19" r="1.6"/><circle cx="15" cy="5" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="15" cy="19" r="1.6"/></svg>')
+    center / 14px 14px no-repeat;
+}
+
+.gv-locked .gv-pm-drag {
+  cursor: default;
+}
+
+/* ========================================
+   PM Theme Toggle
+   ========================================
+   The folder settings switch: a neutral track that takes the accent when on
+   (dark), and a knob carrying the sun or moon in currentColor. */
+
+.gv-pm-theme-toggle {
+  box-sizing: border-box;
+  width: 32px;
+  height: 18px;
+  border-radius: 999px;
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  border: 1px solid oklch(0.62 0.008 285 / 0.5);
+  padding: 0;
+  background: oklch(0.76 0.006 250 / 0.65);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+  outline: none;
+}
+
+.gv-pm-panel .gv-pm-theme-toggle.gv-pm-theme-dark {
+  border-color: var(--gv-pm-brand, var(--gv-pm-brand-default));
+  background: var(--gv-pm-brand, var(--gv-pm-brand-default));
+}
+
+/* Knob */
+.gv-pm-theme-toggle::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: oklch(0.995 0.002 250);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.28);
+  transition: transform 0.15s ease;
+}
+
+.gv-pm-theme-toggle svg {
+  position: absolute;
+  top: 3.5px;
+  left: 3.5px;
+  width: 9px;
+  height: 9px;
+  color: oklch(0.38 0.008 285);
+  pointer-events: none;
+  z-index: 1;
+  transition: transform 0.15s ease;
+}
+
+.gv-pm-theme-toggle:focus-visible {
+  outline: 2px solid var(--gv-ui-focus-ring);
+  outline-offset: 2px;
+}
+
+.gv-pm-theme-toggle.gv-pm-theme-dark::before,
+.gv-pm-theme-toggle.gv-pm-theme-dark svg {
+  transform: translateX(14px);
+}
+
+/* Smooth panel theme transition */
+.gv-pm-panel.gv-pm-transitioning,
+.gv-pm-panel.gv-pm-transitioning * {
+  transition:
+    background 0.4s ease,
+    color 0.4s ease,
+    border-color 0.4s ease,
+    box-shadow 0.4s ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gv-pm-theme-toggle::before,
+  .gv-pm-theme-toggle svg,
+  .gv-pm-panel.gv-pm-transitioning,
+  .gv-pm-panel.gv-pm-transitioning * {
+    transition: none !important;
+  }
+}

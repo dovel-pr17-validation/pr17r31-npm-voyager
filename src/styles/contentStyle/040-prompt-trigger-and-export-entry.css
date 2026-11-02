@@ -1,0 +1,306 @@
+/* Prompt Manager styles (scoped) */
+.gv-pm-trigger {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* A flat accent fill with a soft brand glow; the glow is the ball's signature,
+     so it stays. No hover scale: it made the ball jump. */
+  background: var(--gv-pm-brand, var(--gv-pm-brand-default));
+  border: none;
+  box-shadow:
+    0 6px 24px color-mix(in srgb, var(--gv-pm-brand, var(--gv-pm-brand-default)) 35%, transparent),
+    0 2px 8px color-mix(in srgb, var(--gv-pm-brand, var(--gv-pm-brand-default)) 20%, transparent);
+  color: var(--gv-pm-brand-fg, var(--gv-pm-brand-fg-default));
+  /* Keep every prompt-manager surface above the floating usage bar
+     (2147483000), including when the two are dragged into the same area. */
+  z-index: 2147483100;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.gv-pm-trigger:hover {
+  background: var(--gv-pm-brand-hover);
+  box-shadow:
+    0 10px 32px color-mix(in srgb, var(--gv-pm-brand, var(--gv-pm-brand-default)) 45%, transparent),
+    0 4px 12px color-mix(in srgb, var(--gv-pm-brand, var(--gv-pm-brand-default)) 30%, transparent);
+}
+
+.gv-pm-trigger:focus-visible {
+  outline: 2px solid var(--gv-ui-focus-ring);
+  outline-offset: 3px;
+}
+
+.gv-pm-trigger img {
+  pointer-events: none;
+}
+
+/* Circular avatar: the cut-out fills the ball. Theme shows through
+   silhouette gaps only. */
+.gv-pm-trigger--mascot img {
+  width: 46px;
+  height: 46px;
+  object-fit: cover;
+  object-position: left bottom;
+  border-radius: inherit;
+}
+
+/* Changelog badge on trigger: a static accent tag. It sits on an accent ball,
+   so a ring in the ball's own ink keeps the two apart on every brand colour. */
+.gv-pm-trigger-new::after {
+  content: 'NEW';
+  position: absolute;
+  top: -5px;
+  right: -7px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  font-family: var(--gv-ui-font);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  color: var(--gv-pm-brand-fg, var(--gv-pm-brand-fg-default));
+  background: var(--gv-pm-brand, var(--gv-pm-brand-default));
+  box-shadow: 0 0 0 1.5px var(--gv-pm-brand-fg, var(--gv-pm-brand-fg-default));
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+/* Logo hover dropdown for export */
+.gv-logo-dropdown-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: max-content;
+  pointer-events: none;
+}
+
+.gv-logo-dropdown-wrapper [data-test-id='logo'],
+.gv-logo-dropdown-wrapper .logo {
+  pointer-events: auto;
+}
+
+/* Invisible bridge between logo and dropdown so hover doesn't break in the gap */
+.gv-logo-dropdown-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 12px;
+  pointer-events: none;
+}
+
+.gv-logo-dropdown-wrapper:hover::after {
+  pointer-events: auto;
+}
+
+.gv-logo-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  padding: 4px;
+  min-width: 140px;
+  background: var(--gv-ui-surface);
+  border: 1px solid var(--gv-ui-border);
+  border-radius: 12px;
+  box-shadow: var(--gv-ui-shadow);
+  font-family: var(--gv-ui-font);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px) scale(0.96);
+  transform-origin: top left;
+  transition:
+    opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition-delay: 0.12s;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.gv-logo-dropdown-wrapper:hover .gv-logo-dropdown,
+.gv-logo-dropdown:hover {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+  transition-delay: 0.05s;
+}
+
+.gv-export-dropdown-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--gv-ui-text);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  text-align: left;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.gv-export-dropdown-btn:hover,
+.gv-export-dropdown-btn:active {
+  background: var(--gv-ui-hover);
+}
+
+.gv-export-dropdown-btn:focus-visible {
+  outline: 2px solid var(--gv-ui-focus-ring);
+  outline-offset: -2px;
+}
+
+.gv-export-dropdown-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+  flex-shrink: 0;
+  background: currentColor;
+  -webkit-mask: url('data:image/svg+xml,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3e%3cpath fill=%22%23000%22 d=%22M12 3a1 1 0 011 1v8.586l2.293-2.293a1 1 0 111.414 1.414l-4.007 4.007a1 1 0 01-1.414 0L7.279 11.707a1 1 0 011.414-1.414L11 12.586V4a1 1 0 011-1zm-7 14a1 1 0 011-1h12a1 1 0 011 1v2a2 2 0 01-2 2H7a2 2 0 01-2-2v-2z%22/%3e%3c/svg%3e')
+    center / contain no-repeat;
+  mask: url('data:image/svg+xml,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3e%3cpath fill=%22%23000%22 d=%22M12 3a1 1 0 011 1v8.586l2.293-2.293a1 1 0 111.414 1.414l-4.007 4.007a1 1 0 01-1.414 0L7.279 11.707a1 1 0 011.414-1.414L11 12.586V4a1 1 0 011-1zm-7 14a1 1 0 011-1h12a1 1 0 011 1v2a2 2 0 01-2 2H7a2 2 0 01-2-2v-2z%22/%3e%3c/svg%3e')
+    center / contain no-repeat;
+}
+
+.gv-export-dropdown-label {
+  white-space: nowrap;
+}
+
+/* Add subtle indicator on logo when hovering */
+.gv-logo-dropdown-wrapper [data-test-id='logo']::after {
+  content: '';
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: 4px;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid currentColor;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+  vertical-align: middle;
+}
+
+.gv-logo-dropdown-wrapper:hover [data-test-id='logo']::after {
+  opacity: 0.5;
+  transform: translateY(0);
+}
+
+/* Persistent top-right export toolbar — fallback for lr26+ Gemini UI
+ * where the logo (the usual inline injection point) is absent. */
+.gv-persistent-export-toolbar {
+  position: fixed;
+  top: 12px;
+  right: var(--gv-persistent-export-right, 84px);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.gv-persistent-export-toolbar[data-gv-platform='chatgpt'] {
+  /* Same row as ChatGPT's header actions. Horizontal offset is computed so
+   * the button sits to the left of Share / more instead of over the title.
+   * Its header buttons are 36px tall at top 8px. */
+  top: 8px;
+}
+
+/* A ghost button, like the host header's own Share: no surface or border of
+   its own, a neutral wash on hover, and the accent only on the focus ring.
+   The host's font is kept on purpose; it sits in the host's header row. */
+.gv-persistent-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--gv-ui-text);
+  font-size: 14px;
+  font-weight: 400;
+  font-family: inherit;
+  line-height: 1;
+  /* The button is also the drag handle: a touch drag moves it instead of scrolling. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background-color 0.15s ease;
+}
+
+.gv-persistent-export-btn:hover,
+.gv-persistent-export-btn:active {
+  background: var(--gv-ui-hover);
+}
+
+/* A dragged toolbar keeps the pressed wash and shows a grabbing cursor. */
+.gv-persistent-export-toolbar--dragging .gv-persistent-export-btn {
+  background: var(--gv-ui-hover);
+  cursor: grabbing;
+}
+
+.gv-persistent-export-btn:focus-visible {
+  outline: 2px solid var(--gv-ui-focus-ring);
+  outline-offset: 2px;
+}
+
+.gv-persistent-export-icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.gv-persistent-export-label {
+  white-space: nowrap;
+}
+
+/* Claude's header buttons (Share, the activity panel) are 28px tall at top 8px. */
+.gv-persistent-export-toolbar[data-gv-platform='claude'] {
+  top: 8px;
+}
+
+.gv-persistent-export-toolbar[data-gv-platform='claude'] .gv-persistent-export-btn {
+  height: 28px;
+  padding: 0 10px;
+}
+
+/* Hidden until the remembered spot is read, so it does not show at the dock and then jump.
+ * Also while a host dialog's backdrop covers it: the page under it is inert, and a
+ * fixed toolbar above the dimmed page reads as leaked through. */
+.gv-persistent-export-toolbar--placing,
+.gv-persistent-export-toolbar--under-modal {
+  visibility: hidden;
+}
+
+/* Keep the fallback export entry in the top-right control area even in RTL.
+ * Gemini's left rail is already occupied by navigation icons. */
+body.gv-rtl .gv-persistent-export-toolbar {
+  right: var(--gv-persistent-export-right, 84px);
+  left: auto;
+}

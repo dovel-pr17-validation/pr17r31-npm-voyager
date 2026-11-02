@@ -1,0 +1,109 @@
+import { ManifestV3Export } from '@crxjs/vite-plugin';
+import tailwindcss from '@tailwindcss/vite';
+import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
+import { BuildOptions, defineConfig } from 'vite';
+import tsconfigPaths from 'vite-tsconfig-paths';
+
+import {
+  contentStyleAsset,
+  crxI18n,
+  localeMessages,
+  localeMessagesChunk,
+  selfContainedContentScripts,
+  stripDevIcons,
+} from './custom-vite-plugins';
+import devManifest from './manifest.dev.json';
+import manifest from './manifest.json';
+import pkg from './package.json';
+import { getCatalogRevision } from './scripts/lib/catalogRevision';
+
+const isDev = process.env.__DEV__ === 'true';
+const buildTarget = process.env.VOYAGER_BUILD_TARGET === 'edge' ? 'edge' : 'chrome';
+// set this flag to true, if you want localization support
+const localize = true;
+
+export const baseManifest = {
+  ...manifest,
+  version: pkg.version,
+  ...(isDev ? devManifest : ({} as ManifestV3Export)),
+  ...(localize
+    ? {
+        name: '__MSG_extName__',
+        description: '__MSG_extDescription__',
+        default_locale: 'en',
+      }
+    : {}),
+  // Dev override: bypass the i18n placeholder so the unpacked dev extension
+  // shows up as "Voyager (Dev)" in chrome://extensions, the toolbar tooltip,
+  // and OS task switchers. Makes it impossible to confuse with the Chrome Web
+  // Store install when both are loaded.
+  ...(isDev ? { name: 'Voyager (Dev)' } : {}),
+} as ManifestV3Export;
+
+export const baseBuildOptions: BuildOptions = {
+  sourcemap: isDev,
+  emptyOutDir: !isDev,
+  // Content scripts run under page CSP context for DOM-injected preload links.
+  // Disable Vite modulepreload hints to avoid generating "/assets/*" requests
+  // on the host page origin (e.g. aistudio.google.com), which are blocked by CSP.
+  modulePreload: false,
+};
+
+export default defineConfig({
+  define: {
+    'import.meta.env.VOYAGER_CATALOG_REVISION': JSON.stringify(getCatalogRevision(__dirname)),
+    'import.meta.env.VOYAGER_BUILD_TARGET': JSON.stringify(buildTarget),
+    // Chrome dev builds override this; every other build drops the dev
+    // auto-reload code (src/pages/background/devAutoReload.ts) at compile time.
+    'import.meta.env.VOYAGER_DEV_AUTO_RELOAD': 'false',
+    // Likewise for the page-to-storage settings bridge
+    // (src/pages/content/devSettingsBridge.ts).
+    'import.meta.env.VOYAGER_DEV_SETTINGS_BRIDGE': 'false',
+    // Likewise for the ChatGPT bridge's 24-hour policy expiry
+    // (src/pages/background/bridge/bridgePolicy.ts), which stays on here.
+    'import.meta.env.VOYAGER_DEV_BRIDGE_POLICY_NO_EXPIRY': 'false',
+    // Remote plugin catalog channel (src/features/plugins/remote/config.ts).
+    // Override the origin for a preview deployment, or set
+    // VOYAGER_PLUGIN_CATALOG_REMOTE=off to ship a snapshot-only build.
+    'import.meta.env.VOYAGER_PLUGIN_CATALOG_URL': JSON.stringify(
+      process.env.VOYAGER_PLUGIN_CATALOG_URL ?? '',
+    ),
+    'import.meta.env.VOYAGER_PLUGIN_CATALOG_REMOTE': JSON.stringify(
+      process.env.VOYAGER_PLUGIN_CATALOG_REMOTE ?? 'on',
+    ),
+  },
+  resolve: {
+    alias: {
+      // The public WaveDrom entrypoint eagerly bundles its browser editor,
+      // including an eval-based parser that this renderer never calls. Import
+      // only the pinned package's render primitive so extension artifacts stay
+      // CSP-safe and store-review friendly.
+      'wavedrom/render-any': resolve(__dirname, 'node_modules/wavedrom/lib/render-any.js'),
+    },
+  },
+  plugins: [
+    tailwindcss(),
+    tsconfigPaths(),
+    // The floating folder tree is Preact (per-file @jsxImportSource); keep
+    // React Refresh from wrapping it.
+    react({ exclude: /src\/pages\/content\/folder\/floatingTree\/.*\.tsx$/ }),
+    stripDevIcons(isDev),
+    localeMessages(),
+    crxI18n({ localize, src: './src/locales', stripDescriptions: !isDev }),
+    contentStyleAsset(__dirname),
+    // Must install its window listener synchronously at document_start.
+    selfContainedContentScripts(['src/pages/content/shadowKeyGuardEntry.ts']),
+  ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: localeMessagesChunk,
+      },
+    },
+  },
+  publicDir: resolve(__dirname, 'public'),
+  esbuild: {
+    pure: isDev ? [] : ['console.log', 'console.debug'],
+  },
+});

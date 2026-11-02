@@ -1,0 +1,13 @@
+{
+  "sinceEngine": "1.8.0",
+  "params": {
+    "target": {
+      "type": "semanticKey",
+      "required": true
+    },
+    "metric": {
+      "type": "string",
+      "required": false
+    }
+  }
+}

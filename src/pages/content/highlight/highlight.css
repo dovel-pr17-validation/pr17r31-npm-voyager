@@ -1,0 +1,196 @@
+/* Highlight marks and the note popover. The popover is a Voyager floating layer
+ * like the confirm card: page ui tokens (contentStyle 005) that follow
+ * `html[data-gv-scheme]`, the ui font, and confirm-sized buttons with the
+ * brand on the one primary action. */
+.gv-highlight-mark {
+  border-radius: 2px;
+  color: inherit;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+  text-decoration: none;
+}
+
+.gv-highlight-mark:focus-visible,
+.gv-highlight-mark.gv-highlight-active {
+  outline: 2px solid var(--gv-ui-focus-ring, oklch(0.601 0.1 140));
+  outline-offset: 2px;
+}
+
+.gv-highlight-mark-yellow {
+  background: rgba(250, 204, 21, 0.38);
+}
+
+.gv-highlight-mark-green {
+  background: rgba(74, 222, 128, 0.3);
+}
+
+.gv-highlight-mark-blue {
+  background: rgba(96, 165, 250, 0.28);
+}
+
+.gv-highlight-mark-pink {
+  background: rgba(244, 114, 182, 0.28);
+}
+
+.gv-highlight-popover {
+  position: fixed;
+  z-index: 10002;
+  box-sizing: border-box;
+  width: min(340px, calc(100vw - 24px));
+  padding: 12px;
+  border: 1px solid var(--gv-ui-border, oklch(0.92 0.004 250 / 0.7));
+  border-radius: 12px;
+  background: var(--gv-ui-surface, oklch(0.995 0.002 250));
+  color: var(--gv-ui-text, oklch(0.14 0.004 285));
+  box-shadow: var(--gv-ui-shadow, 0 6px 20px oklch(0 0 0 / 0.16));
+  font-family: var(--gv-ui-font, ui-sans-serif, system-ui, sans-serif);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.gv-highlight-popover-quote {
+  max-height: 72px;
+  margin-bottom: 10px;
+  overflow: auto;
+  color: var(--gv-ui-text-muted, oklch(0.45 0.01 270));
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+.gv-highlight-note {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 76px;
+  resize: vertical;
+  padding: 8px 10px;
+  border: 1px solid oklch(0.5 0.01 285 / 0.28);
+  border-radius: 8px;
+  background: var(--gv-ui-hover, oklch(0.14 0.004 285 / 0.06));
+  color: inherit;
+  font: inherit;
+}
+
+.gv-highlight-note:focus {
+  border-color: var(--gv-ui-focus-ring, oklch(0.601 0.1 140));
+  outline: 2px solid
+    color-mix(in srgb, var(--gv-ui-focus-ring, oklch(0.601 0.1 140)) 22%, transparent);
+}
+
+.gv-highlight-color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.gv-highlight-color-label {
+  margin-inline-end: 2px;
+  color: var(--gv-ui-text-muted, oklch(0.45 0.01 270));
+}
+
+.gv-highlight-swatch {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.gv-highlight-swatch:focus-visible {
+  outline: 2px solid var(--gv-ui-focus-ring, oklch(0.601 0.1 140));
+  outline-offset: 1px;
+}
+
+.gv-highlight-swatch[aria-pressed='true'] {
+  border-color: var(--gv-ui-surface, oklch(0.995 0.002 250));
+  outline: 2px solid var(--gv-ui-primary, oklch(0.601 0.1 140));
+  outline-offset: 0;
+}
+
+/* The toolbar palette's check (selectionToolbar.css): a masked Lucide line icon. */
+.gv-highlight-swatch[aria-pressed='true']::after {
+  position: absolute;
+  inset: 0;
+  background: oklch(1 0 0);
+  content: '';
+  filter: drop-shadow(0 0 1px oklch(0 0 0 / 0.55));
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E")
+    center / 11px 11px no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E")
+    center / 11px 11px no-repeat;
+}
+
+.gv-highlight-popover-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.gv-highlight-popover-button {
+  box-sizing: border-box;
+  min-height: 28px;
+  padding: 4px 12px;
+  border: 1px solid var(--gv-ui-border, oklch(0.92 0.004 250 / 0.7));
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.gv-highlight-popover-button:hover {
+  background: var(--gv-ui-surface-hover, oklch(0.97 0.003 250));
+}
+
+.gv-highlight-popover-button:focus-visible {
+  outline: 2px solid var(--gv-ui-focus-ring, oklch(0.601 0.1 140));
+  outline-offset: 2px;
+}
+
+.gv-highlight-popover-button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.gv-highlight-popover-button-primary {
+  border-color: transparent;
+  background: var(--gv-ui-primary, oklch(0.601 0.1 140));
+  color: var(--gv-ui-primary-fg, #ffffff);
+}
+
+.gv-highlight-popover-button-primary:hover {
+  background: var(--gv-ui-primary, oklch(0.601 0.1 140));
+  filter: brightness(1.06);
+}
+
+.gv-highlight-popover-button-danger {
+  color: var(--gv-ui-danger, oklch(0.55 0.19 25));
+}
+
+.gv-highlight-live {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+body.gv-rtl .gv-highlight-color-row,
+body.gv-rtl .gv-highlight-popover-actions {
+  flex-direction: row-reverse;
+}
+
+@media (forced-colors: active) {
+  .gv-highlight-mark {
+    background: transparent;
+    outline: 1px solid Highlight;
+  }
+}

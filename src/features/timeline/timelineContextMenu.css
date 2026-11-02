@@ -1,0 +1,134 @@
+/* ===== Timeline Context Menu =====
+ * One menu look, shared with the copy-image width menu (`.gv-response-image-menu`
+ * in contentStyle 340): the page ui tokens, rows inset in the card with a
+ * neutral hover wash, and the current level marked in brand ink with a check.
+ * Rows are never filled with the brand: hovered and selected rows merged into
+ * one solid block, and in dark the pale sage under light text was unreadable. */
+.timeline-context-menu {
+  position: fixed;
+  box-sizing: border-box;
+  min-width: 168px;
+  padding: 4px;
+  border: 1px solid var(--gv-ui-border, var(--timeline-tooltip-border));
+  border-radius: 12px;
+  background: var(--gv-ui-surface, var(--timeline-tooltip-bg));
+  color: var(--gv-ui-text, var(--timeline-tooltip-text));
+  box-shadow: var(--gv-ui-shadow, var(--timeline-tooltip-shadow));
+  font-family: var(--gv-ui-font, ui-sans-serif, system-ui, sans-serif);
+  font-size: 13px;
+  line-height: 18px;
+  z-index: 2147483647;
+  animation: timeline-menu-in 0.12s ease-out;
+}
+
+@keyframes timeline-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timeline-context-menu {
+    animation: none;
+  }
+}
+
+.timeline-context-menu-title {
+  padding: 6px 8px 4px;
+  color: var(--gv-ui-text-muted, var(--timeline-tooltip-text));
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.timeline-context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+}
+
+.timeline-context-menu-item:hover {
+  background-color: var(--gv-ui-hover, oklch(0.14 0.004 285 / 0.06));
+}
+
+.timeline-context-menu-item:focus-visible {
+  outline: 2px solid var(--gv-ui-focus-ring, var(--timeline-dot-active-color));
+  outline-offset: -2px;
+}
+
+.timeline-context-menu-item.active {
+  color: var(--gv-ui-primary, var(--timeline-dot-active-color));
+  font-weight: 500;
+}
+
+.timeline-context-menu-item .level-indicator {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.timeline-context-menu-item .level-dot {
+  width: 9px;
+  height: 9px;
+  background-color: var(--gv-ui-text-muted, var(--timeline-dot-color));
+}
+
+.timeline-context-menu-item.active .level-dot {
+  background-color: currentColor;
+}
+
+/* Level 1: Circle */
+.timeline-context-menu-item[data-level='1'] .level-dot {
+  border-radius: 50%;
+  clip-path: none;
+}
+
+/* Level 2: Square */
+.timeline-context-menu-item[data-level='2'] .level-dot {
+  border-radius: 1.5px;
+  clip-path: none;
+}
+
+/* Level 3: Triangle */
+.timeline-context-menu-item[data-level='3'] .level-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 0;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+.timeline-context-menu-item .check-icon {
+  display: inline-flex;
+  margin-inline-start: auto;
+  color: currentColor;
+}
+
+/* Context menu separator */
+.timeline-context-menu-separator {
+  height: 1px;
+  margin: 4px 4px;
+  background-color: var(--gv-ui-border, var(--timeline-tooltip-border));
+}
+
+.timeline-context-menu-item .collapse-icon {
+  width: 16px;
+  display: inline-flex;
+  justify-content: center;
+  flex: none;
+  color: var(--gv-ui-text-muted, var(--timeline-dot-color));
+}

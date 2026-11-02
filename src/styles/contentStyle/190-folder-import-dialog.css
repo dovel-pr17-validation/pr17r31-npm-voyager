@@ -1,0 +1,229 @@
+/* ── Folder Import Dialog ──
+   The page-level ui tokens (005) carry the surface, inks and font through
+   `html[data-gv-scheme]`, so one rule set covers light and dark. The Voyager
+   accent is the full token: a hue rebuilt at higher chroma painted a louder
+   green than the brand itself and lost any custom accent. One brand fill per
+   dialog (Import); choosing a file and pasting are quiet secondary actions. */
+.gv-folder-import-dialog {
+  --gv-import-accent: var(--gv-pm-brand, var(--gv-pm-brand-default));
+  --gv-import-accent-fg: var(--gv-pm-brand-fg, var(--gv-pm-brand-fg-default));
+  --gv-import-accent-soft: color-mix(in srgb, var(--gv-import-accent) 12%, transparent);
+  --gv-import-field: oklch(0.14 0.004 285 / 0.04);
+  box-sizing: border-box;
+  min-width: 400px;
+  max-width: 500px;
+  padding: 20px;
+  border: 1px solid var(--gv-ui-border);
+  border-radius: 12px;
+  background: var(--gv-ui-surface);
+  color: var(--gv-ui-text);
+  box-shadow: var(--gv-ui-shadow);
+  font-family: var(--gv-ui-font);
+  font-size: 13px;
+  line-height: 1.4;
+  animation: gv-folder-fadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html[data-gv-scheme='dark'] .gv-folder-import-dialog {
+  --gv-import-field: oklch(0.92 0.004 250 / 0.05);
+}
+
+.gv-folder-import-dialog .gv-folder-dialog-title {
+  margin-bottom: 16px;
+  padding: 0;
+  border-bottom: none;
+  color: var(--gv-ui-text);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* Strategy selection */
+.gv-folder-import-strategy {
+  margin-bottom: 16px;
+}
+
+.gv-folder-import-strategy-label {
+  margin-bottom: 8px;
+  color: var(--gv-ui-text-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.gv-folder-import-strategy-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gv-folder-import-radio-option {
+  display: flex;
+  align-items: center;
+  padding: 9px 12px;
+  border: 1px solid var(--gv-ui-border);
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.gv-folder-import-radio-option:hover {
+  background: var(--gv-ui-hover);
+}
+
+.gv-folder-import-radio-option input[type='radio'] {
+  margin: 0 10px 0 0;
+  cursor: pointer;
+  accent-color: var(--gv-import-accent);
+}
+
+.gv-folder-import-radio-option span {
+  color: var(--gv-ui-text);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* File input */
+.gv-folder-import-file-input {
+  margin-bottom: 8px;
+}
+
+/* Shared shape of the dialog's full-width secondary actions. */
+.gv-folder-import-file-button,
+.gv-folder-import-paste-toggle {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 12px;
+  border: 1px solid var(--gv-ui-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--gv-ui-text);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.gv-folder-import-file-button:hover,
+.gv-folder-import-paste-toggle:hover {
+  background: var(--gv-ui-hover);
+}
+
+.gv-folder-import-file-button:focus-visible,
+.gv-folder-import-paste-toggle:focus-visible,
+.gv-folder-dialog-btn:focus-visible {
+  outline: 2px solid var(--gv-ui-focus-ring);
+  outline-offset: 2px;
+}
+
+.gv-folder-import-file-name {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  margin-top: 8px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: var(--gv-import-field);
+  color: var(--gv-ui-text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.gv-folder-import-file-name:not(:empty) {
+  display: flex;
+}
+
+/* Paste JSON toggle & textarea */
+.gv-folder-import-paste-container {
+  margin-bottom: 20px;
+}
+
+.gv-folder-import-paste-toggle {
+  border-style: dashed;
+  color: var(--gv-ui-text-muted);
+}
+
+.gv-folder-import-paste-toggle-active {
+  border-style: solid;
+  color: var(--gv-ui-text);
+}
+
+.gv-folder-import-paste-area {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 120px;
+  max-height: 300px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--gv-ui-border);
+  border-radius: 8px;
+  background: var(--gv-import-field);
+  color: var(--gv-ui-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  resize: vertical;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.gv-folder-import-paste-area::placeholder {
+  color: var(--gv-ui-text-muted);
+}
+
+.gv-folder-import-paste-area:focus {
+  outline: none;
+  border-color: var(--gv-import-accent);
+  box-shadow: 0 0 0 3px var(--gv-import-accent-soft);
+}
+
+/* Dialog buttons — the shared confirm's 28px / 8px / 500 controls. */
+.gv-folder-dialog-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.gv-folder-dialog-btn {
+  box-sizing: border-box;
+  min-height: 28px;
+  padding: 4px 12px;
+  border: 1px solid var(--gv-ui-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--gv-ui-text);
+  font-family: var(--gv-ui-font);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    filter 0.15s ease;
+}
+
+.gv-folder-dialog-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.gv-folder-dialog-btn-primary {
+  border-color: transparent;
+  background: var(--gv-import-accent, var(--gv-pm-brand, var(--gv-pm-brand-default)));
+  color: var(--gv-import-accent-fg, var(--gv-pm-brand-fg, var(--gv-pm-brand-fg-default)));
+}
+
+.gv-folder-dialog-btn-primary:hover:not(:disabled) {
+  background: var(--gv-pm-brand-hover);
+}
+
+.gv-folder-dialog-btn-secondary:hover:not(:disabled) {
+  background: var(--gv-ui-hover);
+}

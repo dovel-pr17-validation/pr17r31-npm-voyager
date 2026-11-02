@@ -1,0 +1,262 @@
+{
+  "panelTabFeatures": {
+    "message": "Fonctions",
+    "description": "Panel tab that lists the features of the site being viewed"
+  },
+  "panelTabSites": {
+    "message": "Sites",
+    "description": "Panel tab that lists the sites Voyager can reach"
+  },
+  "panelTabsLabel": {
+    "message": "Sections du panneau",
+    "description": "Accessible name of the panel tab list"
+  },
+  "panelSearch": {
+    "message": "Rechercher",
+    "description": "Search field and button that filter the feature rows"
+  },
+  "panelFullSettings": {
+    "message": "Tous les réglages",
+    "description": "Button that opens the full Voyager settings (toolbar popup)"
+  },
+  "panelEntryGroup": {
+    "message": "Accès",
+    "description": "Group label above the floating button row: ways to open Voyager on the page"
+  },
+  "panelFloatingButton": {
+    "message": "Bouton flottant",
+    "description": "Row for Prompt Manager's floating button on the page"
+  },
+  "panelShortcutHint": {
+    "message": "Ouvre le panneau quand le bouton est masqué",
+    "description": "Tooltip on the shortcut key cap beside the floating button switch"
+  },
+  "panelThisPage": {
+    "message": "Cette page",
+    "description": "Mark beside the page's own site in the site menu"
+  },
+  "panelNotThisPage": {
+    "message": "{site} · Pas cette page : les changements ne sont pas prévisualisés",
+    "description": "Tooltip of the site switcher while another site is viewed; {site} is the site name"
+  },
+  "panelNoMatches": {
+    "message": "Aucune fonction trouvée",
+    "description": "Shown when a feature search finds nothing"
+  },
+  "panelSupportedSites": {
+    "message": "Sites pris en charge",
+    "description": "Group label above the supported sites card"
+  },
+  "panelOtherWebsitesGroup": {
+    "message": "{websites} · Prompts uniquement",
+    "description": "Label above added websites, where only Prompt Manager runs; {websites} is the popup's \"Other websites\" title"
+  },
+  "panelFeaturesOn_one": {
+    "message": "{count} active",
+    "description": "Under a supported site: how many features are on there"
+  },
+  "panelFeaturesOn_few": {
+    "message": "{count} actives",
+    "description": "Under a supported site: how many features are on there"
+  },
+  "panelFeaturesOn_many": {
+    "message": "{count} actives",
+    "description": "Under a supported site: how many features are on there"
+  },
+  "panelFeaturesOn_other": {
+    "message": "{count} actives",
+    "description": "Under a supported site: how many features are on there"
+  },
+  "panelNotEnabled": {
+    "message": "Désactivé",
+    "description": "Under a supported site Voyager cannot reach yet"
+  },
+  "panelWaitingForBrowser": {
+    "message": "En attente du navigateur",
+    "description": "Under a supported site while the browser's permission prompt is open"
+  },
+  "panelAllowAccess": {
+    "message": "Autoriser l’accès à {site}",
+    "description": "Accessible name of a site's access switch; {site} is the site name"
+  },
+  "panelRemoveWebsite": {
+    "message": "Retirer {site}",
+    "description": "Accessible name of the remove button of an added website; {site} is its host"
+  },
+  "panelSyncShared": {
+    "message": "Commun",
+    "description": "Sync sheet row for data shared by every site"
+  },
+  "panelSyncSharedDetail": {
+    "message": "Prompts · Réglages · Plugins",
+    "description": "Sub-line under the Shared row: what it contains"
+  },
+  "panelSyncStatusSynced": {
+    "message": "Synchronisé",
+    "description": "Sync row status: cloud and this device match"
+  },
+  "panelSyncStatusNewerHere": {
+    "message": "Plus récent ici",
+    "description": "Sync row status: this device has changes the cloud lacks"
+  },
+  "panelSyncStatusNewerInCloud": {
+    "message": "Plus récent dans le cloud",
+    "description": "Sync row status: the cloud has changes this device lacks"
+  },
+  "panelSyncStatusNotUploaded": {
+    "message": "Pas envoyé",
+    "description": "Sync row status: never uploaded"
+  },
+  "panelSyncStatusToMerge": {
+    "message": "À fusionner",
+    "description": "Sync row status after first connecting: cloud and local need a merge"
+  },
+  "panelSyncStatusSyncing": {
+    "message": "Synchronisation",
+    "description": "Sync row status and primary button while a sync runs"
+  },
+  "panelSyncStatusFailed": {
+    "message": "Vérification impossible",
+    "description": "Sync row status when its state could not be read"
+  },
+  "panelSyncInCloud": {
+    "message": "Dans le cloud",
+    "description": "Status of a site that is off here but has data in the cloud"
+  },
+  "panelSyncEnable": {
+    "message": "Activer",
+    "description": "Button beside such a site: opens the Sites tab to turn it on"
+  },
+  "panelSyncRun_one": {
+    "message": "Synchroniser {count}",
+    "description": "Primary button: run every pending row"
+  },
+  "panelSyncRun_few": {
+    "message": "Synchroniser {count}",
+    "description": "Primary button: run every pending row"
+  },
+  "panelSyncRun_many": {
+    "message": "Synchroniser {count}",
+    "description": "Primary button: run every pending row"
+  },
+  "panelSyncRun_other": {
+    "message": "Synchroniser {count}",
+    "description": "Primary button: run every pending row"
+  },
+  "panelSyncMerge_one": {
+    "message": "Fusionner {count}",
+    "description": "Primary button after first connecting: merge every pending row"
+  },
+  "panelSyncMerge_few": {
+    "message": "Fusionner {count}",
+    "description": "Primary button after first connecting: merge every pending row"
+  },
+  "panelSyncMerge_many": {
+    "message": "Fusionner {count}",
+    "description": "Primary button after first connecting: merge every pending row"
+  },
+  "panelSyncMerge_other": {
+    "message": "Fusionner {count}",
+    "description": "Primary button after first connecting: merge every pending row"
+  },
+  "panelSyncUpToDate": {
+    "message": "À jour",
+    "description": "Disabled primary button when nothing is pending"
+  },
+  "panelSyncMore": {
+    "message": "Plus",
+    "description": "Accessible name of the sheet's more-actions button"
+  },
+  "panelSyncUploadAll": {
+    "message": "Tout envoyer",
+    "description": "Menu item: upload every row to the cloud"
+  },
+  "panelSyncMergeAll": {
+    "message": "Tout fusionner depuis le cloud",
+    "description": "Menu item: merge every row from the cloud into this device"
+  },
+  "panelSyncRestorePrevious": {
+    "message": "Restaurer la version précédente",
+    "description": "Menu item and confirm button: put the cloud files back to their previous version"
+  },
+  "panelSyncRestoreAsk": {
+    "message": "Remettre la version précédente du cloud ?",
+    "description": "Inline question before restoring the previous cloud version"
+  },
+  "panelSyncDisconnect": {
+    "message": "Déconnecter Google Drive",
+    "description": "Menu item: sign out of Google Drive"
+  },
+  "panelSyncDone_one": {
+    "message": "{count} synchronisé",
+    "description": "Toast after a sync: how many rows were synced"
+  },
+  "panelSyncDone_few": {
+    "message": "{count} synchronisés",
+    "description": "Toast after a sync: how many rows were synced"
+  },
+  "panelSyncDone_many": {
+    "message": "{count} synchronisés",
+    "description": "Toast after a sync: how many rows were synced"
+  },
+  "panelSyncDone_other": {
+    "message": "{count} synchronisés",
+    "description": "Toast after a sync: how many rows were synced"
+  },
+  "panelSyncRestored": {
+    "message": "Version précédente restaurée",
+    "description": "Toast after restoring the previous cloud version"
+  },
+  "panelSyncRestoredPartial": {
+    "message": "Version précédente restaurée en partie",
+    "description": "Toast when only some files had a previous version"
+  },
+  "panelSyncRestoreNone": {
+    "message": "Aucune version précédente dans le cloud",
+    "description": "Toast when the cloud has no previous version to restore"
+  },
+  "panelSyncConnectLine": {
+    "message": "Synchronisez dossiers, prompts et réglages entre vos appareils",
+    "description": "Line in the sheet before Google Drive is connected"
+  },
+  "panelSyncConnecting": {
+    "message": "Connexion…",
+    "description": "Connect button while the sign-in is open"
+  },
+  "panelSyncFirstHint": {
+    "message": "Fusionne d’abord le cloud et cet appareil. Rien n’est écrasé",
+    "description": "Hint after first connecting, above the rows"
+  },
+  "panelSyncSiteAdded": {
+    "message": "{site} est synchronisé",
+    "description": "Toast after turning a site on: {site} is the site name"
+  },
+  "panelSyncAgo": {
+    "message": "Synchronisé {time}",
+    "description": "Footer: when the last sync happened; {time} is a relative time such as \"12 min ago\""
+  },
+  "panelSyncJustNow": {
+    "message": "Synchronisé à l’instant",
+    "description": "Footer right after a sync"
+  },
+  "panelSyncNever": {
+    "message": "Pas encore synchronisé",
+    "description": "Footer before anything was synced"
+  },
+  "panelSyncRowSwitch": {
+    "message": "Synchroniser {site}",
+    "description": "Accessible name of a row's sync switch; {site} is the row name"
+  },
+  "panelSyncRestoreFailed": {
+    "message": "Impossible de restaurer la version précédente",
+    "description": "Toast: restoring the previous cloud version failed for every file"
+  },
+  "panelSyncUndone": {
+    "message": "Synchronisation annulée",
+    "description": "Toast after undoing a sync"
+  },
+  "panelSyncUndonePartial": {
+    "message": "Annulé. Ce qui a changé depuis est conservé",
+    "description": "Toast after undo when items changed since the sync were kept"
+  }
+}

@@ -1,0 +1,148 @@
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { StorageKeys } from '@/core/types/common';
+
+import type { OfficialPanelProps } from './officialPluginPanels';
+
+const DEFAULT_PORT = 3030;
+const MIN_PORT = 1;
+const MAX_PORT = 65535;
+const POLL_INTERVAL_MS = 5000;
+const PROBE_TIMEOUT_MS = 200;
+const SUCCESS_MESSAGE_MS = 3000;
+
+function storedPort(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : DEFAULT_PORT;
+}
+
+/**
+ * Context Sync's port, IDE status and Sync button. Mounted only while its row
+ * is on and shown, so the status polling and a Sync button never outlive the
+ * switch (the row is the old Disabled / Manual mode). The sync request itself
+ * lives above the panel (`useContextSyncRequest`), so a search that hides the
+ * row mid-sync keeps it pending and its result.
+ *
+ * The local server is probed only while the panel is on screen. The card this
+ * replaced probed whenever the popup opened with the feature on; the panel now
+ * shows without an Options click, so opening the popup alone should not start
+ * polling localhost.
+ */
+export function ContextSyncPanel({ values, write, contextSync, idPrefix, t }: OfficialPanelProps) {
+  const port = storedPort(values[StorageKeys.CONTEXT_SYNC_PORT]);
+  // What the field shows while typing; a cleared field is not a port to save.
+  const [draft, setDraft] = useState(String(port));
+  const [isOnline, setIsOnline] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  // Without IntersectionObserver there is no telling, so the panel probes as the old card did.
+  const [onScreen, setOnScreen] = useState(() => typeof IntersectionObserver === 'undefined');
+  const syncing = contextSync?.syncing ?? false;
+  const status = contextSync?.status ?? null;
+  const dismiss = contextSync?.dismiss;
+
+  // A success fades only after it has been on screen; one that landed while closed waits.
+  useEffect(() => {
+    if (status?.kind !== 'ok' || !dismiss) return;
+    const timer = setTimeout(() => dismiss(status), SUCCESS_MESSAGE_MS);
+    return () => clearTimeout(timer);
+  }, [status, dismiss]);
+
+  useEffect(() => setDraft(String(port)), [port]);
+
+  const checkConnection = useCallback(async () => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
+    try {
+      await fetch(`http://127.0.0.1:${port}/sync`, { method: 'GET', signal: controller.signal });
+      setIsOnline(true);
+    } catch {
+      setIsOnline(false);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }, [port]);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver((entries) =>
+      setOnScreen(entries.some((entry) => entry.isIntersecting)),
+    );
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!onScreen) return;
+    void checkConnection();
+    const interval = setInterval(() => void checkConnection(), POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [checkConnection, onScreen]);
+
+  const handlePortChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const text = event.target.value;
+    setDraft(text);
+    const parsed = parseInt(text, 10);
+    if (Number.isNaN(parsed)) return;
+    const next = Math.min(MAX_PORT, Math.max(MIN_PORT, parsed));
+    if (next !== parsed) setDraft(String(next));
+    if (next !== port) write({ [StorageKeys.CONTEXT_SYNC_PORT]: next });
+  };
+
+  const portId = `${idPrefix}-port`;
+  return (
+    <div ref={rootRef} className="space-y-2.5">
+      <p className="text-muted-foreground text-[11px] leading-snug">
+        {t('contextSyncDescription')}
+      </p>
+      <div>
+        <label htmlFor={portId} className="text-foreground/80 mb-1 block text-xs">
+          {t('syncServerPort')}
+        </label>
+        <Input
+          id={portId}
+          type="number"
+          inputMode="numeric"
+          value={draft}
+          onChange={handlePortChange}
+          min={MIN_PORT}
+          max={MAX_PORT}
+          className="w-full tabular-nums"
+        />
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex items-center gap-2 text-xs font-medium" role="status">
+          <span
+            aria-hidden="true"
+            className={`h-2 w-2 rounded-full ${isOnline ? 'bg-success' : 'bg-destructive'}`}
+          />
+          {isOnline ? t('ideOnline') : t('ideOffline')}
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-xs"
+          onClick={() => contextSync?.sync()}
+          disabled={!contextSync || !isOnline || syncing}
+        >
+          {t('syncToIDE')}
+        </Button>
+      </div>
+      {status && (
+        <p
+          role={status.kind === 'err' ? 'alert' : 'status'}
+          className={`text-xs ${
+            status.kind === 'ok'
+              ? 'text-success'
+              : status.kind === 'err'
+                ? 'text-destructive'
+                : 'text-muted-foreground'
+          }`}
+        >
+          {status.kind === 'err' ? status.message : t(status.key)}
+        </p>
+      )}
+    </div>
+  );
+}

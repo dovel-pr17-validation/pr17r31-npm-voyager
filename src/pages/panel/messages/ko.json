@@ -1,0 +1,262 @@
+{
+  "panelTabFeatures": {
+    "message": "기능",
+    "description": "Panel tab that lists the features of the site being viewed"
+  },
+  "panelTabSites": {
+    "message": "사이트",
+    "description": "Panel tab that lists the sites Voyager can reach"
+  },
+  "panelTabsLabel": {
+    "message": "패널 구역",
+    "description": "Accessible name of the panel tab list"
+  },
+  "panelSearch": {
+    "message": "기능 검색",
+    "description": "Search field and button that filter the feature rows"
+  },
+  "panelFullSettings": {
+    "message": "전체 설정",
+    "description": "Button that opens the full Voyager settings (toolbar popup)"
+  },
+  "panelEntryGroup": {
+    "message": "실행",
+    "description": "Group label above the floating button row: ways to open Voyager on the page"
+  },
+  "panelFloatingButton": {
+    "message": "플로팅 버튼",
+    "description": "Row for Prompt Manager's floating button on the page"
+  },
+  "panelShortcutHint": {
+    "message": "버튼을 숨겨도 이 단축키로 패널을 열 수 있어요",
+    "description": "Tooltip on the shortcut key cap beside the floating button switch"
+  },
+  "panelThisPage": {
+    "message": "이 페이지",
+    "description": "Mark beside the page's own site in the site menu"
+  },
+  "panelNotThisPage": {
+    "message": "{site} · 지금 페이지가 아니라서 변경 사항이 미리 보이지 않아요",
+    "description": "Tooltip of the site switcher while another site is viewed; {site} is the site name"
+  },
+  "panelNoMatches": {
+    "message": "일치하는 기능이 없어요",
+    "description": "Shown when a feature search finds nothing"
+  },
+  "panelSupportedSites": {
+    "message": "지원 사이트",
+    "description": "Group label above the supported sites card"
+  },
+  "panelOtherWebsitesGroup": {
+    "message": "{websites} · 프롬프트만",
+    "description": "Label above added websites, where only Prompt Manager runs; {websites} is the popup's \"Other websites\" title"
+  },
+  "panelFeaturesOn_one": {
+    "message": "{count}개 켜짐",
+    "description": "Under a supported site: how many features are on there"
+  },
+  "panelFeaturesOn_few": {
+    "message": "{count}개 켜짐",
+    "description": "Under a supported site: how many features are on there"
+  },
+  "panelFeaturesOn_many": {
+    "message": "{count}개 켜짐",
+    "description": "Under a supported site: how many features are on there"
+  },
+  "panelFeaturesOn_other": {
+    "message": "{count}개 켜짐",
+    "description": "Under a supported site: how many features are on there"
+  },
+  "panelNotEnabled": {
+    "message": "사용 안 함",
+    "description": "Under a supported site Voyager cannot reach yet"
+  },
+  "panelWaitingForBrowser": {
+    "message": "브라우저 승인 대기 중",
+    "description": "Under a supported site while the browser's permission prompt is open"
+  },
+  "panelAllowAccess": {
+    "message": "{site} 접근 허용",
+    "description": "Accessible name of a site's access switch; {site} is the site name"
+  },
+  "panelRemoveWebsite": {
+    "message": "{site} 삭제",
+    "description": "Accessible name of the remove button of an added website; {site} is its host"
+  },
+  "panelSyncShared": {
+    "message": "공통",
+    "description": "Sync sheet row for data shared by every site"
+  },
+  "panelSyncSharedDetail": {
+    "message": "프롬프트 · 설정 · 플러그인",
+    "description": "Sub-line under the Shared row: what it contains"
+  },
+  "panelSyncStatusSynced": {
+    "message": "동기화됨",
+    "description": "Sync row status: cloud and this device match"
+  },
+  "panelSyncStatusNewerHere": {
+    "message": "이 기기가 최신",
+    "description": "Sync row status: this device has changes the cloud lacks"
+  },
+  "panelSyncStatusNewerInCloud": {
+    "message": "클라우드가 최신",
+    "description": "Sync row status: the cloud has changes this device lacks"
+  },
+  "panelSyncStatusNotUploaded": {
+    "message": "업로드 안 됨",
+    "description": "Sync row status: never uploaded"
+  },
+  "panelSyncStatusToMerge": {
+    "message": "병합 필요",
+    "description": "Sync row status after first connecting: cloud and local need a merge"
+  },
+  "panelSyncStatusSyncing": {
+    "message": "동기화 중",
+    "description": "Sync row status and primary button while a sync runs"
+  },
+  "panelSyncStatusFailed": {
+    "message": "확인할 수 없음",
+    "description": "Sync row status when its state could not be read"
+  },
+  "panelSyncInCloud": {
+    "message": "클라우드에 데이터 있음",
+    "description": "Status of a site that is off here but has data in the cloud"
+  },
+  "panelSyncEnable": {
+    "message": "사용",
+    "description": "Button beside such a site: opens the Sites tab to turn it on"
+  },
+  "panelSyncRun_one": {
+    "message": "{count}개 동기화",
+    "description": "Primary button: run every pending row"
+  },
+  "panelSyncRun_few": {
+    "message": "{count}개 동기화",
+    "description": "Primary button: run every pending row"
+  },
+  "panelSyncRun_many": {
+    "message": "{count}개 동기화",
+    "description": "Primary button: run every pending row"
+  },
+  "panelSyncRun_other": {
+    "message": "{count}개 동기화",
+    "description": "Primary button: run every pending row"
+  },
+  "panelSyncMerge_one": {
+    "message": "{count}개 병합",
+    "description": "Primary button after first connecting: merge every pending row"
+  },
+  "panelSyncMerge_few": {
+    "message": "{count}개 병합",
+    "description": "Primary button after first connecting: merge every pending row"
+  },
+  "panelSyncMerge_many": {
+    "message": "{count}개 병합",
+    "description": "Primary button after first connecting: merge every pending row"
+  },
+  "panelSyncMerge_other": {
+    "message": "{count}개 병합",
+    "description": "Primary button after first connecting: merge every pending row"
+  },
+  "panelSyncUpToDate": {
+    "message": "최신 상태",
+    "description": "Disabled primary button when nothing is pending"
+  },
+  "panelSyncMore": {
+    "message": "더보기",
+    "description": "Accessible name of the sheet's more-actions button"
+  },
+  "panelSyncUploadAll": {
+    "message": "모두 클라우드에 업로드",
+    "description": "Menu item: upload every row to the cloud"
+  },
+  "panelSyncMergeAll": {
+    "message": "모두 클라우드에서 병합",
+    "description": "Menu item: merge every row from the cloud into this device"
+  },
+  "panelSyncRestorePrevious": {
+    "message": "이전 버전 복원",
+    "description": "Menu item and confirm button: put the cloud files back to their previous version"
+  },
+  "panelSyncRestoreAsk": {
+    "message": "클라우드를 이전 버전으로 되돌릴까요?",
+    "description": "Inline question before restoring the previous cloud version"
+  },
+  "panelSyncDisconnect": {
+    "message": "Google Drive 연결 해제",
+    "description": "Menu item: sign out of Google Drive"
+  },
+  "panelSyncDone_one": {
+    "message": "{count}개 동기화됨",
+    "description": "Toast after a sync: how many rows were synced"
+  },
+  "panelSyncDone_few": {
+    "message": "{count}개 동기화됨",
+    "description": "Toast after a sync: how many rows were synced"
+  },
+  "panelSyncDone_many": {
+    "message": "{count}개 동기화됨",
+    "description": "Toast after a sync: how many rows were synced"
+  },
+  "panelSyncDone_other": {
+    "message": "{count}개 동기화됨",
+    "description": "Toast after a sync: how many rows were synced"
+  },
+  "panelSyncRestored": {
+    "message": "이전 버전을 복원했습니다",
+    "description": "Toast after restoring the previous cloud version"
+  },
+  "panelSyncRestoredPartial": {
+    "message": "이전 버전을 일부 복원했습니다",
+    "description": "Toast when only some files had a previous version"
+  },
+  "panelSyncRestoreNone": {
+    "message": "클라우드에 이전 버전이 없습니다",
+    "description": "Toast when the cloud has no previous version to restore"
+  },
+  "panelSyncConnectLine": {
+    "message": "폴더, 프롬프트, 설정을 여러 기기에서 동기화",
+    "description": "Line in the sheet before Google Drive is connected"
+  },
+  "panelSyncConnecting": {
+    "message": "연결 중…",
+    "description": "Connect button while the sign-in is open"
+  },
+  "panelSyncFirstHint": {
+    "message": "먼저 클라우드와 이 기기를 병합합니다. 어느 쪽도 덮어쓰지 않습니다",
+    "description": "Hint after first connecting, above the rows"
+  },
+  "panelSyncSiteAdded": {
+    "message": "{site}을(를) 클라우드 동기화에 추가했습니다",
+    "description": "Toast after turning a site on: {site} is the site name"
+  },
+  "panelSyncAgo": {
+    "message": "{time} 동기화",
+    "description": "Footer: when the last sync happened; {time} is a relative time such as \"12 min ago\""
+  },
+  "panelSyncJustNow": {
+    "message": "방금 동기화",
+    "description": "Footer right after a sync"
+  },
+  "panelSyncNever": {
+    "message": "아직 동기화하지 않음",
+    "description": "Footer before anything was synced"
+  },
+  "panelSyncRowSwitch": {
+    "message": "{site} 동기화",
+    "description": "Accessible name of a row's sync switch; {site} is the row name"
+  },
+  "panelSyncRestoreFailed": {
+    "message": "이전 버전으로 복원하지 못했습니다",
+    "description": "Toast: restoring the previous cloud version failed for every file"
+  },
+  "panelSyncUndone": {
+    "message": "동기화를 실행 취소했습니다",
+    "description": "Toast after undoing a sync"
+  },
+  "panelSyncUndonePartial": {
+    "message": "실행 취소했습니다. 이후 바뀐 항목은 그대로 두었습니다",
+    "description": "Toast after undo when items changed since the sync were kept"
+  }
+}

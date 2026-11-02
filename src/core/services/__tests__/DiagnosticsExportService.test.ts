@@ -1,0 +1,327 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { EFFECTIVE_PLUGIN_ENGINE_VERSION } from '@/features/plugins/verbs/contracts';
+
+import {
+  VOYAGER_DIAGNOSTICS_FILENAME,
+  type VoyagerDiagnosticsPayload,
+  buildVoyagerDiagnostics,
+  copyVoyagerDiagnosticsMarkdown,
+  diagnosticPluginSourceFromId,
+  downloadVoyagerDiagnostics,
+  formatVoyagerDiagnosticsMarkdown,
+  serializeVoyagerDiagnostics,
+} from '../DiagnosticsExportService';
+
+vi.mock('@/features/plugins/catalog/sites', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/features/plugins/catalog/sites')>();
+  const template = actual.BUNDLED_SITE_ADAPTERS.find((site) => site.id === 'deepseek');
+  if (!template) throw new Error('Missing bundled site fixture');
+  return {
+    ...actual,
+    BUNDLED_SITE_ADAPTERS: [
+      ...actual.BUNDLED_SITE_ADAPTERS,
+      {
+        ...template,
+        id: 'derived-chat',
+        label: 'Derived Chat',
+        matches: ['https://chat.derived.example/*'],
+      },
+    ],
+  };
+});
+
+function fixturePayload(): VoyagerDiagnosticsPayload {
+  return {
+    format: 'gemini-voyager.plugin-diagnostics.v1',
+    generatedAt: '2026-07-29T12:00:00.000Z',
+    extension: { version: '1.6.0', buildTarget: 'chrome' },
+    environment: {
+      browser: 'chrome',
+      browserVersion: '150.0.0.0',
+      os: 'macos',
+      activeSite: 'claude',
+    },
+    pluginEngine: { version: EFFECTIVE_PLUGIN_ENGINE_VERSION },
+    nativeHealth: [],
+    plugins: { availableCount: 0, items: [], redactedCount: 0 },
+    privacy: { redactedPluginSettingCount: 0, omittedData: [] },
+  };
+}
+
+describe('DiagnosticsExportService', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('builds a stable plugin diagnostics schema with declared settings only', () => {
+    const payload = buildVoyagerDiagnostics({
+      activeUrl: 'https://claude.ai/chat/private-conversation-id',
+      buildTarget: 'chrome',
+      extensionVersion: '1.6.0',
+      now: new Date('2026-07-29T12:00:00.000Z'),
+      platform: 'MacIntel',
+      plugins: [
+        {
+          id: 'voyager.z-plugin',
+          version: '2.0.0',
+          source: 'marketplace',
+          enabled: false,
+        },
+        {
+          id: 'voyager.a-plugin',
+          version: '1.2.3',
+          source: 'bundled-catalog',
+          enabled: true,
+          settingsSchema: {
+            width: { type: 'number', label: 'Width', default: 80 },
+            compact: { type: 'boolean', label: 'Compact', default: false },
+          },
+          settings: { width: 92, undeclaredSecret: 'must-not-export' },
+        },
+      ],
+      userAgent:
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/150.0.7871.184 Safari/537.36',
+    });
+
+    expect(payload).toEqual({
+      format: 'gemini-voyager.plugin-diagnostics.v1',
+      generatedAt: '2026-07-29T12:00:00.000Z',
+      extension: { version: '1.6.0', buildTarget: 'chrome' },
+      environment: {
+        browser: 'chrome',
+        browserVersion: '150.0.7871.184',
+        os: 'macos',
+        activeSite: 'claude',
+      },
+      pluginEngine: { version: EFFECTIVE_PLUGIN_ENGINE_VERSION },
+      nativeHealth: [],
+      plugins: {
+        availableCount: 2,
+        items: [
+          {
+            id: 'voyager.a-plugin',
+            version: '1.2.3',
+            source: 'bundled-catalog',
+            enabled: true,
+            settings: { compact: false, width: 92 },
+          },
+          {
+            id: 'voyager.z-plugin',
+            version: '2.0.0',
+            source: 'marketplace',
+            enabled: false,
+            settings: {},
+          },
+        ],
+        redactedCount: 0,
+      },
+      privacy: {
+        redactedPluginSettingCount: 0,
+        omittedData: [
+          'account-identifiers',
+          'authentication-credentials',
+          'conversation-content-and-urls',
+          'folder-content',
+          'private-marketplace-urls',
+          'prompt-content',
+          'undeclared-plugin-settings',
+          'usage-caches',
+        ],
+      },
+    });
+    expect(serializeVoyagerDiagnostics(payload)).not.toContain('must-not-export');
+    expect(serializeVoyagerDiagnostics(payload)).not.toContain('private-conversation-id');
+  });
+
+  it('resolves a derived bundled site to its catalog id', () => {
+    const payload = buildVoyagerDiagnostics({
+      activeUrl: 'https://chat.derived.example/a/chat/s/example',
+    });
+
+    expect(payload.environment.activeSite).toBe('derived-chat');
+  });
+
+  it.each([
+    ['https://chat.openai.com/c/example', 'chatgpt'],
+    ['https://chat.deepseek.com/a/chat/s/example', 'deepseek'],
+    ['https://api.deepseek.com/', 'deepseek'],
+  ])('keeps the existing diagnostic site for %s', (activeUrl, activeSite) => {
+    expect(buildVoyagerDiagnostics({ activeUrl }).environment.activeSite).toBe(activeSite);
+  });
+
+  it('labels plugin values the popup derived from storage, and only those', () => {
+    const payload = buildVoyagerDiagnostics({
+      activeUrl: 'https://gemini.google.com/app',
+      extensionVersion: '1.6.0',
+      plugins: [
+        {
+          id: 'voyager.gemini-chat-font-size',
+          version: '1.0.0',
+          source: 'bundled-catalog',
+          enabled: true,
+          settingsSchema: { fontSize: { type: 'number', label: 'Size', default: 100 } },
+          settings: { fontSize: 120 },
+          basis: 'storage-derived',
+        },
+        { id: 'local.me.tweak', version: '1.0.0', source: 'local', enabled: true },
+        // Anything else a caller passes is no label the payload carries.
+        {
+          id: 'local.me.other',
+          version: '1.0.0',
+          source: 'local',
+          enabled: true,
+          basis: 'page' as never,
+        },
+      ],
+    });
+
+    expect(payload.plugins.items.map((plugin) => [plugin.id, plugin.basis])).toEqual([
+      ['local.me.other', undefined],
+      ['local.me.tweak', undefined],
+      ['voyager.gemini-chat-font-size', 'storage-derived'],
+    ]);
+    expect(serializeVoyagerDiagnostics(payload)).toContain('"basis": "storage-derived"');
+  });
+
+  it('includes Gemini health entries as closed identifiers only', () => {
+    const payload = buildVoyagerDiagnostics({
+      activeUrl: 'https://gemini.google.com/u/1/app/private-conversation-id',
+      extensionVersion: '1.6.0',
+      nativeHealth: [
+        {
+          feature: 'timeline',
+          anchor: 'turn.user',
+          status: 'broken',
+          route: 'conversation',
+          firstSeenAt: Date.UTC(2026, 6, 29, 11, 59),
+          lastSeenAt: Date.UTC(2026, 6, 29, 12, 0),
+          extensionVersion: '1.6.0',
+        },
+        // Out-of-vocabulary values never reach the report.
+        {
+          feature: 'timeline',
+          anchor: 'https://gemini.google.com/app/private-conversation-id',
+          status: 'broken',
+          route: 'conversation',
+          firstSeenAt: 1,
+          lastSeenAt: 1,
+          extensionVersion: '1.6.0',
+        } as never,
+      ],
+    });
+
+    expect(payload.nativeHealth).toEqual([
+      {
+        feature: 'timeline',
+        anchor: 'turn.user',
+        status: 'broken',
+        route: 'conversation',
+        firstSeenAt: '2026-07-29T11:59:00.000Z',
+        lastSeenAt: '2026-07-29T12:00:00.000Z',
+        extensionVersion: '1.6.0',
+      },
+    ]);
+    // The Markdown users paste into the bug report carries the same entries.
+    const markdown = formatVoyagerDiagnosticsMarkdown(payload);
+    expect(markdown).toContain('"nativeHealth": [');
+    expect(markdown).toContain('"anchor": "turn.user"');
+    expect(markdown).not.toContain('private-conversation-id');
+  });
+
+  it('redacts sensitive declared values and unsafe plugin metadata', () => {
+    const privateToken = `sk-${'a'.repeat(32)}`;
+    const payload = buildVoyagerDiagnostics({
+      activeUrl: 'https://private.example.com/secret/path',
+      plugins: [
+        {
+          id: 'voyager.safe',
+          version: '1.0.0',
+          source: 'local',
+          enabled: true,
+          settingsSchema: {
+            token: { type: 'string', label: 'Token', default: '' },
+            theme: {
+              type: 'select',
+              label: 'Theme',
+              default: 'light',
+              options: [
+                { value: 'light', label: 'Light' },
+                { value: 'dark', label: 'Dark' },
+              ],
+            },
+          },
+          settings: { token: privateToken, theme: 'private-choice' },
+        },
+        {
+          id: 'person@example.com',
+          version: 'secret',
+          source: 'marketplace',
+          enabled: true,
+        },
+      ],
+    });
+
+    expect(payload.environment.activeSite).toBe('custom');
+    expect(payload.plugins).toEqual({
+      availableCount: 2,
+      items: [
+        {
+          id: 'voyager.safe',
+          version: '1.0.0',
+          source: 'local',
+          enabled: true,
+          settings: { theme: '<redacted>', token: '<redacted>' },
+        },
+      ],
+      redactedCount: 1,
+    });
+    expect(payload.privacy.redactedPluginSettingCount).toBe(2);
+    const serialized = serializeVoyagerDiagnostics(payload);
+    expect(serialized).not.toContain(privateToken);
+    expect(serialized).not.toContain('person@example.com');
+    expect(serialized).not.toContain('private.example.com');
+  });
+
+  it('normalizes source identifiers without exposing arbitrary source data', () => {
+    expect(diagnosticPluginSourceFromId('builtin')).toBe('builtin');
+    expect(diagnosticPluginSourceFromId('marketplace')).toBe('marketplace');
+    expect(diagnosticPluginSourceFromId('https://private.example/catalog.json')).toBe('unknown');
+  });
+
+  it('formats and copies GitHub-ready Markdown', async () => {
+    const payload = fixturePayload();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    });
+
+    await copyVoyagerDiagnosticsMarkdown(payload);
+
+    const markdown = formatVoyagerDiagnosticsMarkdown(payload);
+    expect(markdown).toMatch(/^### Voyager diagnostics\n\n```json\n/);
+    expect(markdown).toContain('"format": "gemini-voyager.plugin-diagnostics.v1"');
+    expect(markdown).toMatch(/\n```$/);
+    expect(writeText).toHaveBeenCalledWith(markdown);
+  });
+
+  it('downloads JSON with the stable diagnostics filename', () => {
+    const createObjectURL = vi.fn().mockReturnValue('blob:diagnostics');
+    const revokeObjectURL = vi.fn();
+    Object.defineProperty(URL, 'createObjectURL', { value: createObjectURL, configurable: true });
+    Object.defineProperty(URL, 'revokeObjectURL', { value: revokeObjectURL, configurable: true });
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => undefined);
+
+    downloadVoyagerDiagnostics(fixturePayload());
+
+    expect(createObjectURL).toHaveBeenCalledOnce();
+    expect(click).toHaveBeenCalledOnce();
+    expect((click.mock.instances[0] as HTMLAnchorElement).download).toBe(
+      VOYAGER_DIAGNOSTICS_FILENAME,
+    );
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:diagnostics');
+  });
+});

@@ -1,0 +1,77 @@
+/**
+ * SiteRegistry — resolves the current URL to a `SiteAdapter`.
+ *
+ * The default registry ships Voyager's bundled adapters. The registry is
+ * mutable so future work (or tests) can register additional sites without
+ * touching the runtime.
+ */
+import { BUNDLED_SITE_ADAPTERS } from '../catalog/sites';
+import type { SiteAdapter, SiteId } from '../types';
+import { aistudioAdapter } from './adapters/aistudio';
+import { geminiAdapter } from './adapters/gemini';
+import { matchesAnyPattern } from './matchPattern';
+
+const PACKAGED_ADAPTERS: readonly SiteAdapter[] = [geminiAdapter, aistudioAdapter];
+
+/**
+ * Every site is data in `catalog/sites/<site>/site.json`, discovered at build
+ * time. Gemini and AI Studio, the native surfaces, come first and once each:
+ * the CLI help, the authoring docs and the public SKILL.md list sites in this
+ * order.
+ */
+export const DEFAULT_ADAPTERS: readonly SiteAdapter[] = [
+  ...PACKAGED_ADAPTERS,
+  ...BUNDLED_SITE_ADAPTERS.filter(
+    (adapter) => !PACKAGED_ADAPTERS.some((packaged) => packaged.id === adapter.id),
+  ),
+];
+
+/**
+ * Site ids Voyager treats as first-party "native" surfaces — these get the full
+ * Gemini Voyager feature set (Timeline, Folders, Prompt Manager, …). Every other
+ * adapter (Claude / ChatGPT / DeepSeek) is a *plugin platform*: declarative plugins
+ * + platform theming only, never core Gemini features. Having a `site.json` does
+ * not make a site a plugin platform: this set decides it.
+ */
+export const NATIVE_SITE_IDS: ReadonlySet<SiteId> = new Set<SiteId>(['gemini', 'aistudio']);
+
+export class SiteRegistry {
+  private readonly adapters: SiteAdapter[] = [];
+
+  register(adapter: SiteAdapter): void {
+    // Last registration wins for a given id (lets callers override a builtin).
+    const existing = this.adapters.findIndex((a) => a.id === adapter.id);
+    if (existing >= 0) this.adapters.splice(existing, 1);
+    this.adapters.push(adapter);
+  }
+
+  /** First adapter whose match patterns match the URL, or null. */
+  resolveByUrl(url: string): SiteAdapter | null {
+    return this.adapters.find((adapter) => matchesAnyPattern(url, adapter.matches)) ?? null;
+  }
+
+  all(): readonly SiteAdapter[] {
+    return this.adapters.slice();
+  }
+
+  static createDefault(): SiteRegistry {
+    const registry = new SiteRegistry();
+    for (const adapter of DEFAULT_ADAPTERS) registry.register(adapter);
+    return registry;
+  }
+}
+
+/**
+ * Resolve the id of a third-party *plugin platform* for a URL (Claude / ChatGPT / DeepSeek),
+ * or `null` when the URL is a native Voyager site (Gemini / AI Studio)
+ * or has no adapter at all. The content script uses this to keep core Gemini
+ * features off plugin-only platforms while still running the plugin host + theme.
+ */
+export function resolvePluginPlatformId(
+  url: string,
+  registry: SiteRegistry = SiteRegistry.createDefault(),
+): SiteId | null {
+  const adapter = registry.resolveByUrl(url);
+  if (!adapter) return null;
+  return NATIVE_SITE_IDS.has(adapter.id) ? null : adapter.id;
+}

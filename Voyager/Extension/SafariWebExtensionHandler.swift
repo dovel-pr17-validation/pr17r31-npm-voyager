@@ -1,0 +1,277 @@
+//
+//  SafariWebExtensionHandler.swift
+//  Voyager Extension
+//
+
+import AppKit
+import SafariServices
+import os.log
+
+final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
+  func beginRequest(with context: NSExtensionContext) {
+    guard let request = context.inputItems.first as? NSExtensionItem,
+      let message = extensionMessage(from: request)
+    else {
+      respondWithError(context: context, message: "Invalid message")
+      return
+    }
+
+    let nativeRequest: VoyagerNativeRequest
+    do {
+      nativeRequest = try VoyagerNativeMessageCodec.decodeRequest(from: message)
+    } catch {
+      respondWithError(context: context, message: "Invalid native message")
+      return
+    }
+
+    os_log(.info, "Safari native action: %{public}@", nativeRequest.actionName)
+
+    switch nativeRequest {
+    case .ping:
+      respondWithSuccess(context: context, data: VoyagerPingResponse(status: "ok"))
+    case .deliverNotification(let request):
+      deliverNotification(request: request, context: context)
+    case .requestNotificationPermission:
+      requestNotificationPermission(context: context)
+    case .googleDriveGetSession, .googleDriveSignOut, .googleDriveFindFile,
+      .googleDriveEnsureFile, .googleDriveUploadFile, .googleDriveDownloadFile,
+      .googleDriveGetFileMetadata, .googleDriveCreateFile, .googleDriveListHistory,
+      .googleDriveTrashFile:
+      handleGoogleDrive(nativeRequest, message: message, context: context)
+    case .iCloudAccountStatus:
+      handleICloudAccountStatus(context: context)
+    case .iCloudReadFile(let fileName):
+      readICloudFile(fileName: fileName, context: context)
+    case .iCloudDeleteBackup:
+      deleteICloudBackup(context: context)
+    case .iCloudReadUploadVersion(let fileName):
+      readICloudUploadVersion(fileName: fileName, context: context)
+    case .iCloudWriteUpload(let request):
+      writeICloudUpload(request: request, context: context)
+    case .iCloudUndoUpload(let receipt):
+      ICloudSyncService.shared.undoUpload(receipt: receipt) { response in
+        self.respondWithSuccess(context: context, data: response)
+      }
+    case .iCloudReadHistory(let fileName, let includingHistoryId):
+      ICloudSyncService.shared.readHistory(
+        fileName: fileName, includingHistoryId: includingHistoryId
+      ) { result in
+        switch result {
+        case .success(let response): self.respondWithSuccess(context: context, data: response)
+        case .failure(let error): self.respondWithICloudError(context: context, error: error)
+        }
+      }
+    case .iCloudRestoreHistory(let request):
+      ICloudSyncService.shared.restoreHistory(request) { response in
+        self.respondWithSuccess(context: context, data: response)
+      }
+    case .iCloudPruneHistory(let request):
+      ICloudSyncService.shared.pruneHistory(request) { result in
+        switch result {
+        case .success(let response): self.respondWithSuccess(context: context, data: response)
+        case .failure(let error): self.respondWithICloudError(context: context, error: error)
+        }
+      }
+    case .copyImageToPasteboard(let request):
+      copyImageToPasteboard(request: request, context: context)
+    case .setAppLanguage(let language):
+      // The containing app reads it at launch to show its window in this language.
+      respondWithSuccess(
+        context: context,
+        data: VoyagerAppLanguageResponse(
+          saved: VoyagerSharedState.keychain.setAppLanguage(language)
+        )
+      )
+    }
+  }
+
+  private func copyImageToPasteboard(
+    request: VoyagerClipboardImageRequest,
+    context: NSExtensionContext
+  ) {
+    guard let imageData = Data(base64Encoded: request.pngBase64), !imageData.isEmpty else {
+      respondWithError(context: context, message: "Invalid image data")
+      return
+    }
+
+    DispatchQueue.main.async {
+      let pasteboard = NSPasteboard.general
+      pasteboard.clearContents()
+      let copied = pasteboard.setData(imageData, forType: .png)
+      self.respondWithSuccess(
+        context: context,
+        data: VoyagerClipboardWriteResponse(copied: copied)
+      )
+    }
+  }
+
+  private func handleICloudAccountStatus(context: NSExtensionContext) {
+    ICloudSyncService.shared.accountStatus { result in
+      switch result {
+      case .success:
+        self.respondWithSuccess(
+          context: context,
+          data: VoyagerICloudAccountResponse(available: true)
+        )
+      case .failure(let error):
+        self.respondWithICloudError(context: context, error: error)
+      }
+    }
+  }
+
+  private func readICloudUploadVersion(fileName: String, context: NSExtensionContext) {
+    ICloudSyncService.shared.readUploadVersion(fileName: fileName) { result in
+      switch result {
+      case .success(let response): self.respondWithSuccess(context: context, data: response)
+      case .failure(let error): self.respondWithICloudError(context: context, error: error)
+      }
+    }
+  }
+
+  private func writeICloudUpload(request: VoyagerICloudUploadRequest, context: NSExtensionContext) {
+    ICloudSyncService.shared.writeUpload(request: request) { result in
+      switch result {
+      case .success(let response): self.respondWithSuccess(context: context, data: response)
+      case .failure(let error): self.respondWithICloudError(context: context, error: error)
+      }
+    }
+  }
+
+  private func readICloudFile(fileName: String, context: NSExtensionContext) {
+    ICloudSyncService.shared.read(fileName: fileName) { result in
+      switch result {
+      case .success(let json):
+        self.respondWithSuccess(
+          context: context,
+          data: VoyagerICloudReadResponse(json: json, found: json != nil)
+        )
+      case .failure(let error):
+        self.respondWithICloudError(context: context, error: error)
+      }
+    }
+  }
+
+  private func deleteICloudBackup(context: NSExtensionContext) {
+    ICloudSyncService.shared.deleteBackup { result in
+      switch result {
+      case .success(let response):
+        self.respondWithSuccess(
+          context: context,
+          data: response
+        )
+      case .failure(let error):
+        self.respondWithICloudError(context: context, error: error)
+      }
+    }
+  }
+
+  private func respondWithICloudError(context: NSExtensionContext, error: Error) {
+    guard let failure = error as? VoyagerICloudFailure else {
+      respondWithError(context: context, message: error.localizedDescription)
+      return
+    }
+
+    respondWithError(
+      context: context,
+      failure: VoyagerNativeFailure(
+        error: failure.localizedDescription,
+        code: failure.code.rawValue,
+        retryAfterMs: failure.retryAfterMilliseconds
+      )
+    )
+  }
+
+  private func deliverNotification(
+    request: VoyagerNotificationRequest,
+    context: NSExtensionContext
+  ) {
+    NativeNotificationService.shared.deliver(
+      id: request.id ?? UUID().uuidString,
+      title: request.title,
+      body: request.body,
+      destination: request.url.flatMap {
+        VoyagerNotificationDestination(rawValue: $0)
+      }
+    ) { result in
+      switch result {
+      case .success:
+        self.respondWithSuccess(
+          context: context,
+          data: VoyagerNotificationDeliveryResponse(delivered: true)
+        )
+      case .failure(let error):
+        self.respondWithError(context: context, message: error.localizedDescription)
+      }
+    }
+  }
+
+  private func requestNotificationPermission(context: NSExtensionContext) {
+    NativeNotificationService.shared.requestAuthorization { result in
+      switch result {
+      case .success(let granted):
+        self.respondWithSuccess(
+          context: context,
+          data: VoyagerNotificationPermissionResponse(granted: granted)
+        )
+      case .failure(let error):
+        self.respondWithError(context: context, message: error.localizedDescription)
+      }
+    }
+  }
+
+  private func extensionMessage(from request: NSExtensionItem) -> [String: Any]? {
+    if #available(macOS 11.0, *) {
+      return request.userInfo?[SFExtensionMessageKey] as? [String: Any]
+    }
+    return request.userInfo?["message"] as? [String: Any]
+  }
+
+  /// `driveAccount` names the Google account that served a Drive request.
+  func respondWithSuccess<Payload: Codable>(
+    context: NSExtensionContext,
+    data: Payload,
+    driveAccount: String? = nil
+  ) {
+    respond(
+      context: context, response: VoyagerNativeResponse.success(data), driveAccount: driveAccount)
+  }
+
+  func respondWithError(context: NSExtensionContext, message: String) {
+    respondWithError(context: context, failure: VoyagerNativeFailure(error: message))
+  }
+
+  func respondWithError(context: NSExtensionContext, failure: VoyagerNativeFailure) {
+    respond(
+      context: context,
+      response: VoyagerNativeResponse<VoyagerEmptyResponse>.failure(failure)
+    )
+  }
+
+  private func respond<Payload: Codable>(
+    context: NSExtensionContext,
+    response nativeResponse: VoyagerNativeResponse<Payload>,
+    driveAccount: String? = nil
+  ) {
+    guard var message = try? VoyagerNativeMessageCodec.encodeResponse(nativeResponse) else {
+      context.cancelRequest(withError: VoyagerNativeHandlerError.responseEncodingFailed)
+      return
+    }
+    if let driveAccount { message[VoyagerDriveAccount.responseKey] = driveAccount }
+
+    let response = NSExtensionItem()
+    if #available(macOS 11.0, *) {
+      response.userInfo = [SFExtensionMessageKey: message]
+    } else {
+      response.userInfo = ["message": message]
+    }
+    context.completeRequest(returningItems: [response])
+  }
+}
+
+private enum VoyagerNativeHandlerError: LocalizedError {
+  case responseEncodingFailed
+
+  var errorDescription: String? {
+    "Could not encode the native response"
+  }
+}

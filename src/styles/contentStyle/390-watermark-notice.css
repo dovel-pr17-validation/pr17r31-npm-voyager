@@ -1,0 +1,309 @@
+/* ── Native media-watermark notice ─────────────────────────────────────────
+   One-time dialog telling users Gemini now ships its own watermark switch.
+   Colors run through tokens so the dark override below only restates the
+   palette, not the layout. */
+.gv-wm-notice {
+  --gv-wmn-surface: var(--gv-ui-surface);
+  --gv-wmn-border: var(--gv-ui-border);
+  --gv-wmn-divider: var(--gv-ui-border);
+  --gv-wmn-title: var(--gv-ui-text);
+  --gv-wmn-text: var(--gv-ui-text);
+  --gv-wmn-muted: var(--gv-ui-text-muted);
+  --gv-wmn-subtle-bg: var(--gv-ui-hover);
+  /* Matches the screenshot's own cream background so the hero reads as one
+     surface instead of a pasted-in rectangle, in dark mode too: a dark frame
+     around a light screenshot reads as a pasted rectangle. */
+  --gv-wmn-hero-bg: #fbf6e6;
+  --gv-wmn-accent: var(--gv-pm-brand, var(--gv-pm-brand-default));
+  --gv-wmn-on-accent: var(--gv-pm-brand-fg, var(--gv-pm-brand-fg-default));
+  --gv-wmn-error: var(--gv-ui-danger);
+
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 72px 20px 20px;
+  /* The layer only positions the helper card. Everything outside the card
+     stays interactive so the user can follow the guide in Gemini. */
+  pointer-events: none;
+  font-family: var(--gv-ui-font);
+  animation: gv-fade-in 0.2s ease-out;
+}
+
+.gv-wm-notice__dialog {
+  width: min(100%, 390px);
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  max-height: min(calc(100vh - 92px), 620px);
+  max-height: min(calc(100dvh - 92px), 620px);
+  overflow: auto;
+  pointer-events: auto;
+  border: 1px solid var(--gv-wmn-border);
+  border-radius: 12px;
+  background: var(--gv-wmn-surface);
+  color: var(--gv-wmn-text);
+  box-shadow: var(--gv-ui-shadow);
+  animation: gv-slide-up 0.3s ease-out;
+}
+
+/* No bottom rule here — the hero image butts straight up against the
+   headline, so a divider would just cut the dialog into slices. */
+.gv-wm-notice__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px 16px 12px;
+}
+
+.gv-wm-notice__heading {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.gv-wm-notice__title {
+  margin: 0;
+  color: var(--gv-wmn-title);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+/* Supporting evidence stays on the same typographic plane as the title. */
+.gv-wm-notice__detected {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--gv-wmn-muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.gv-wm-notice__detected::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 50%;
+  background: var(--gv-wmn-accent);
+}
+
+.gv-wm-notice__close {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--gv-wmn-muted);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  transition: background-color 0.2s;
+}
+
+.gv-wm-notice__close:hover {
+  background: var(--gv-wmn-subtle-bg);
+  color: var(--gv-wmn-title);
+}
+
+/* The annotated screenshot stays in the existing card, but at helper scale
+   rather than taking over the page like a modal illustration. */
+.gv-wm-notice__hero {
+  margin: 0;
+  background: var(--gv-wmn-hero-bg);
+  border-block: 1px solid var(--gv-wmn-divider);
+}
+
+.gv-wm-notice__image {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+
+/* The caption sits on the card, not the cream: in dark its light ink would
+   vanish on the screenshot's ground. */
+.gv-wm-notice__hero-caption {
+  padding: 8px 16px 10px;
+  background: var(--gv-wmn-surface);
+}
+
+/* Breadcrumb replaces the old numbered list — the markers drawn on the
+   screenshot already number the steps. */
+.gv-wm-notice__trail {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.gv-wm-notice__trail-hop {
+  color: var(--gv-wmn-text);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.gv-wm-notice__trail-hop--target {
+  color: var(--gv-wmn-accent);
+  font-weight: 600;
+}
+
+.gv-wm-notice__trail-sep {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+  color: var(--gv-wmn-muted);
+  background: currentcolor;
+  /* Chevron drawn as a mask so it inherits color and flips under RTL. */
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 6l6 6-6 6' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+.gv-wm-notice__body {
+  padding: 12px 16px 0;
+  color: var(--gv-wmn-text);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.gv-wm-notice__lead {
+  margin: 0;
+  text-wrap: pretty;
+}
+
+.gv-wm-notice__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 16px 15px;
+}
+
+.gv-wm-notice__caveat {
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--gv-wmn-divider);
+  color: var(--gv-wmn-muted);
+  font-size: 11.5px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.gv-wm-notice__buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+
+/* The shared confirm's buttons: 28px / 8px / 500, one size for both. */
+.gv-wm-notice__btn {
+  box-sizing: border-box;
+  min-height: 28px;
+  padding: 4px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+  white-space: normal;
+  transition:
+    background-color 0.15s,
+    opacity 0.15s;
+}
+
+.gv-wm-notice__btn:focus-visible,
+.gv-wm-notice__close:focus-visible {
+  outline: 2px solid var(--gv-ui-focus-ring);
+  outline-offset: 2px;
+}
+
+.gv-wm-notice__btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.gv-wm-notice__btn--secondary {
+  background: transparent;
+  color: var(--gv-wmn-muted);
+}
+
+.gv-wm-notice__btn--secondary:hover:not(:disabled) {
+  background: var(--gv-wmn-subtle-bg);
+  color: var(--gv-wmn-text);
+}
+
+.gv-wm-notice__btn--primary {
+  background: var(--gv-wmn-accent);
+  color: var(--gv-wmn-on-accent);
+}
+
+.gv-wm-notice__btn--primary:hover:not(:disabled) {
+  background: var(--gv-pm-brand-hover);
+}
+
+.gv-wm-notice__done {
+  margin: 0;
+  color: var(--gv-wmn-accent);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: end;
+}
+
+.gv-wm-notice__error {
+  margin: 0;
+  color: var(--gv-wmn-error);
+  font-size: 12.5px;
+  font-weight: 500;
+  text-align: end;
+}
+
+/* Narrow viewports keep the helper at the top, where it does not cover
+   Gemini's bottom settings affordance. */
+@media (max-width: 460px) {
+  .gv-wm-notice {
+    padding: 12px;
+  }
+
+  .gv-wm-notice__dialog {
+    width: min(100%, 360px);
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+}
+
+body.gv-rtl .gv-wm-notice {
+  justify-content: flex-start;
+}
+
+body.gv-rtl .gv-wm-notice__trail-sep {
+  transform: scaleX(-1);
+}
+
+/* Watermark remover's download indicator (previewRuntime.ts): the 🍌 badge,
+   named for Nano Banana, marks a download button that saves the image without
+   its watermark. Clicks pass through to the native button. */
+.gv-watermark-indicator {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 10;
+  font-size: 11px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+  pointer-events: none;
+}

@@ -1,0 +1,442 @@
+import { type Mock, describe, expect, it, vi } from 'vitest';
+
+import type { PluginManifest } from '../types';
+import { PluginHost } from './PluginHost';
+import {
+  manifest,
+  StaticSource,
+  mockState,
+  fireStateChange,
+  flush,
+} from './PluginHost.testHarness';
+import { registerNativeHandler } from './nativeHandlers';
+
+describe('PluginHost', () => {
+  it('mounts an enabled plugin that matches the current URL', async () => {
+    mockState({ 'voyager.test': { enabled: true, installedAt: 1 } });
+    const host = new PluginHost({
+      url: 'https://claude.ai/chat/1',
+      sources: [new StaticSource([manifest(['https://claude.ai/*'])])],
+      doc: document,
+    });
+
+    await host.start();
+    expect(document.body.classList.contains('gv-plugin-active')).toBe(true);
+  });
+
+  it('does not mount a disabled plugin', async () => {
+    mockState({ 'voyager.test': { enabled: false, installedAt: 1 } });
+    const host = new PluginHost({
+      url: 'https://claude.ai/chat/1',
+      sources: [new StaticSource([manifest(['https://claude.ai/*'])])],
+      doc: document,
+    });
+
+    await host.start();
+    expect(document.body.classList.contains('gv-plugin-active')).toBe(false);
+  });
+
+  it('does not mount an enabled scripted plugin and tells the popup to update Voyager', async () => {
+    mockState({ 'voyager.test': { enabled: true, installedAt: 1 } });
+    const scripted: PluginManifest = { ...manifest(['https://claude.ai/*']), tier: 'scripted' };
+    const host = new PluginHost({
+      url: 'https://claude.ai/chat/1',
+      sources: [new StaticSource([scripted])],
+      doc: document,
+    });
+
+    await host.start();
+    expect(document.body.classList.contains('gv-plugin-active')).toBe(false);
+    expect(host.getStatuses()).toEqual([expect.objectContaining({ kind: 'needs-handler' })]);
+  });
+
+  it('does not mount a plugin that does not match the URL', async () => {
+    mockState({ 'voyager.test': { enabled: true, installedAt: 1 } });
+    const host = new PluginHost({
+      url: 'https://gemini.google.com/app',
+      sources: [new StaticSource([manifest(['https://claude.ai/*'])])],
+      doc: document,
+    });
+
+    await host.start();
+    expect(document.body.classList.contains('gv-plugin-active')).toBe(false);
+  });
+
+  it('resolves the adapter for the current site', async () => {
+    mockState({});
+    const host = new PluginHost({
+      url: 'https://chatgpt.com/x',
+      sources: [new StaticSource([])],
+      doc: document,
+    });
+    await host.start();
+    expect(host.activeAdapter?.id).toBe('chatgpt');
+  });
+
+  it('stop() unmounts active plugins', async () => {
+    mockState({ 'voyager.test': { enabled: true, installedAt: 1 } });
+    const host = new PluginHost({
+      url: 'https://claude.ai/chat/1',
+      sources: [new StaticSource([manifest(['https://claude.ai/*'])])],
+      doc: document,
+    });
+
+    await host.start();
+    expect(document.body.classList.contains('gv-plugin-active')).toBe(true);
+
+    host.stop();
+    expect(document.body.classList.contains('gv-plugin-active')).toBe(false);
+  });
+
+  it('pushes settings only to the plugin whose settings actually changed', async () => {
+    const settingsSchema = {
+      flag: { type: 'boolean' as const, label: 'Flag', default: false },
+    };
+    const a: PluginManifest = {
+      ...manifest(['https://claude.ai/*'], 'voyager.native-a'),
+      contributes: { settings: settingsSchema },
+    };
+    const b: PluginManifest = {
+      ...manifest(['https://claude.ai/*'], 'voyager.native-b'),
+      contributes: { settings: settingsSchema },
+    };
+    const updateA = vi.fn();
+    const updateB = vi.fn();
+    registerNativeHandler('voyager.native-a', { updateSettings: updateA });
+    registerNativeHandler('voyager.native-b', { updateSettings: updateB });
+
+    const enabled = { enabled: true, installedAt: 1 };
+    mockState({ 'voyager.native-a': enabled, 'voyager.native-b': enabled });
+    const host = new PluginHost({
+      url: 'https://claude.ai/chat/1',
+      sources: [new StaticSource([a, b])],
+      doc: document,
+    });
+    await host.start();
+
+    fireStateChange({
+      'voyager.native-a': { ...enabled, settings: { flag: true } },
+      'voyager.native-b': enabled,
+    });
+    await flush();
+
+    expect(updateA).toHaveBeenCalledTimes(1);
+    expect(updateA).toHaveBeenCalledWith({ flag: true });
+    expect(updateB).not.toHaveBeenCalled();
+    host.stop();
+  });
+
+  it('serializes reconcile passes: a disable landing mid-pass wins', async () => {
+    // An enable kicks off a reconcile pass that blocks on the entitlement
+    // await; while it is blocked, the user disables the plugin. The blocked
+    // pass then mounts from its stale pre-disable decision, and only because
+    // passes are serialized does the follow-up pass run after it and correct
+    // the outcome. Interleaved passes would leave the plugin mounted while
+    // disabled.
+    let releaseBlockedPass!: () => void;
+    const gate = new Promise<void>((r) => (releaseBlockedPass = r));
+    let calls = 0;
+    const entitlement = {
+      getState: vi.fn(async () => {
+        calls += 1;
+        if (calls === 1) await gate;
+        return 'free' as const;
+      }),
+    };
+
+    mockState({ 'voyager.test': { enabled: false, installedAt: 1 } });
+    const host = new PluginHost({
+      url: 'https://claude.ai/chat/1',
+      sources: [new StaticSource([manifest(['https://claude.ai/*'])])],
+      entitlement,
+      doc: document,
+    });
+    await host.start();
+
+    fireStateChange({ 'voyager.test': { enabled: true, installedAt: 1 } });
+    await vi.waitFor(() => expect(entitlement.getState).toHaveBeenCalledTimes(1));
+    fireStateChange({ 'voyager.test': { enabled: false, installedAt: 1 } });
+    releaseBlockedPass();
+    await flush();
+
+    expect(document.body.classList.contains('gv-plugin-active')).toBe(false);
+    host.stop();
+  });
+
+  it('a pass blocked across stop()→start() cannot mount into the new generation', async () => {
+    // Generation ABA: pass 1 (gen 1) decides "mount" then blocks on
+    // entitlement; the host is stopped and restarted (plugin now disabled).
+    // When pass 1 resumes, a bare `started` boolean reads true again — only
+    // the generation check stops it from mounting its stale decision into
+    // the restarted engine.
+    let releaseBlockedPass!: () => void;
+    const gate = new Promise<void>((r) => (releaseBlockedPass = r));
+    let calls = 0;
+    const entitlement = {
+      getState: vi.fn(async () => {
+        calls += 1;
+        if (calls === 1) await gate;
+        return 'free' as const;
+      }),
+    };
+
+    mockState({ 'voyager.test': { enabled: true, installedAt: 1 } });
+    const host = new PluginHost({
+      url: 'https://claude.ai/chat/1',
+      sources: [new StaticSource([manifest(['https://claude.ai/*'])])],
+      entitlement,
+      doc: document,
+    });
+
+    const firstStart = host.start();
+    await vi.waitFor(() => expect(entitlement.getState).toHaveBeenCalledTimes(1));
+
+    host.stop();
+    mockState({ 'voyager.test': { enabled: false, installedAt: 1 } });
+    const secondStart = host.start();
+
+    releaseBlockedPass();
+    await Promise.all([firstStart, secondStart]);
+    await flush();
+
+    expect(document.body.classList.contains('gv-plugin-active')).toBe(false);
+    // A stale start must not overwrite the new generation's unsubscribe
+    // handles: after stopping, every registered subscription is removed.
+    host.stop();
+    expect((chrome.storage.onChanged.addListener as unknown as Mock).mock.calls.length).toBe(
+      (chrome.storage.onChanged.removeListener as unknown as Mock).mock.calls.length,
+    );
+  });
+});
+
+describe('PluginHost remote catalog', () => {
+  const CATALOG_KEY = 'gvPluginHostCatalog:claude.ai';
+
+  function catalogEntry(ids: string[], extensionVersion = '1.0.0') {
+    return {
+      host: 'claude.ai',
+      status: 'ok',
+      manifests: ids.map((id) => manifest(['https://claude.ai/*'], id)),
+      fetchedAt: 1,
+      lastAttemptAt: 1,
+      failureCount: 0,
+      extensionVersion,
+    };
+  }
+
+  function fireCatalogChange(oldValue: unknown, newValue: unknown): void {
+    const listeners = (chrome.storage.onChanged.addListener as unknown as Mock).mock.calls;
+    for (const [listener] of listeners) {
+      listener({ [CATALOG_KEY]: { oldValue, newValue } }, 'local');
+    }
+  }
+
+  it('asks the background to check the catalog when an enabled plugin targets the page', async () => {
+    mockState({ 'voyager.test': { enabled: true, installedAt: 1 } });
+    const requestCatalogRefresh = vi.fn();
+    const host = new PluginHost({
+      url: 'https://claude.ai/chat/1',
+      sources: [new StaticSource([manifest(['https://claude.ai/*'])])],
+      doc: document,
+      requestCatalogRefresh,
+      isTopFrame: true,
+    });
+
+    await host.start();
+    expect(requestCatalogRefresh).toHaveBeenCalledTimes(1);
+    expect(requestCatalogRefresh).toHaveBeenCalledWith('claude.ai');
+    host.stop();
+  });
+
+  it('never asks on Gemini, on a page whose plugins are all disabled, or from an embedded frame', async () => {
+    const claudePlugin = manifest(['https://claude.ai/*']);
+
+    mockState({ 'voyager.test': { enabled: true, installedAt: 1 } });
+    const gemini = vi.fn();
+    const onGemini = new PluginHost({
+      url: 'https://gemini.google.com/app',
+      sources: [new StaticSource([claudePlugin])],
+      doc: document,
+      requestCatalogRefresh: gemini,
+      isTopFrame: true,
+    });
+    await onGemini.start();
+    expect(gemini).not.toHaveBeenCalled();
+    onGemini.stop();
+
+    mockState({ 'voyager.test': { enabled: false, installedAt: 1 } });
+    const disabled = vi.fn();
+    const onClaudeDisabled = new PluginHost({
+      url: 'https://claude.ai/chat/1',
+      sources: [new StaticSource([claudePlugin])],
+      doc: document,
+      requestCatalogRefresh: disabled,
+      isTopFrame: true,
+    });
+    await onClaudeDisabled.start();
+    expect(disabled).not.toHaveBeenCalled();
+    onClaudeDisabled.stop();
+
+    mockState({ 'voyager.test': { enabled: true, installedAt: 1 } });
+    const framed = vi.fn();
+    const inFrame = new PluginHost({
+      url: 'https://claude.ai/chat/1',
+      sources: [new StaticSource([claudePlugin])],
+      doc: document,
+      requestCatalogRefresh: framed,
+      isTopFrame: false,
+    });
+    await inFrame.start();
+    expect(framed).not.toHaveBeenCalled();
+    inFrame.stop();
+  });
+
+  it("reloads its sources when this host's cached catalog changes content, not on bookkeeping writes", async () => {
+    mockState({ 'voyager.test': { enabled: true, installedAt: 1 } });
+    const list = vi.fn(async () => [manifest(['https://claude.ai/*'])]);
+    const host = new PluginHost({
+      url: 'https://claude.ai/chat/1',
+      sources: [{ id: 'spy', list }],
+      doc: document,
+      requestCatalogRefresh: () => {},
+      isTopFrame: true,
+    });
+    await host.start();
+    expect(list).toHaveBeenCalledTimes(1);
+
+    // Same plugin set, only attempt bookkeeping differs → no reload.
+    fireCatalogChange(catalogEntry(['voyager.remote']), {
+      ...catalogEntry(['voyager.remote']),
+      lastAttemptAt: 99,
+      failureCount: 2,
+    });
+    await flush();
+    expect(list).toHaveBeenCalledTimes(1);
+
+    // A different plugin set → reload + reconcile.
+    fireCatalogChange(catalogEntry(['voyager.remote']), catalogEntry(['voyager.remote', 'x']));
+    await flush();
+    expect(list).toHaveBeenCalledTimes(2);
+
+    // Another host's catalog → ignored.
+    const listeners = (chrome.storage.onChanged.addListener as unknown as Mock).mock.calls;
+    for (const [listener] of listeners) {
+      listener({ 'gvPluginHostCatalog:chatgpt.com': { newValue: catalogEntry(['y']) } }, 'local');
+    }
+    await flush();
+    expect(list).toHaveBeenCalledTimes(2);
+    host.stop();
+  });
+
+  it('keeps a running plugin mounted when an unrelated local plugin is imported', async () => {
+    const running: PluginManifest = {
+      ...manifest(['https://claude.ai/*'], 'voyager.native-a'),
+      contributes: {
+        styles: [{ css: '.gv-native-a{color:red}' }],
+      },
+    };
+    const start = vi.fn();
+    const stop = vi.fn();
+    registerNativeHandler('voyager.native-a', { start, stop });
+    mockState({ 'voyager.native-a': { enabled: true, installedAt: 1 } });
+    const imported = manifest(['https://claude.ai/*'], 'local.me.css-only');
+    let listing: readonly PluginManifest[] = [running];
+    const list = vi.fn(async () => listing);
+    const host = new PluginHost({
+      url: 'https://claude.ai/chat/1',
+      sources: [{ id: 'spy', list }],
+      doc: document,
+    });
+    await host.start();
+    expect(start).toHaveBeenCalledTimes(1);
+
+    // A fresh but identical copy of the running plugin, plus a disabled import.
+    listing = [structuredClone(running), imported];
+    const listeners = (chrome.storage.onChanged.addListener as unknown as Mock).mock.calls;
+    for (const [listener] of listeners) {
+      listener({ gvPluginLocalManifests: { newValue: {} } }, 'local');
+    }
+    await flush();
+    expect(list).toHaveBeenCalledTimes(2);
+    expect(stop).not.toHaveBeenCalled();
+    expect(start).toHaveBeenCalledTimes(1);
+    host.stop();
+  });
+
+  it('reloads its sources when the user imports, updates or removes a local plugin', async () => {
+    mockState({ 'voyager.test': { enabled: true, installedAt: 1 } });
+    const list = vi.fn(async () => [manifest(['https://claude.ai/*'])]);
+    const host = new PluginHost({
+      url: 'https://claude.ai/chat/1',
+      sources: [{ id: 'spy', list }],
+      doc: document,
+    });
+    await host.start();
+    expect(list).toHaveBeenCalledTimes(1);
+
+    const listeners = (chrome.storage.onChanged.addListener as unknown as Mock).mock.calls;
+    for (const [listener] of listeners) {
+      listener({ gvPluginLocalManifests: { newValue: {} } }, 'local');
+    }
+    await flush();
+    expect(list).toHaveBeenCalledTimes(2);
+    host.stop();
+  });
+
+  it('applies a catalog written while the initial listing is in flight, and keeps it current', async () => {
+    mockState({
+      'voyager.test': { enabled: true, installedAt: 1 },
+      'voyager.late': { enabled: true, installedAt: 1 },
+    });
+    const late: PluginManifest = {
+      ...manifest(['https://claude.ai/*'], 'voyager.late'),
+      contributes: {
+        domOps: [
+          {
+            op: 'addClass',
+            target: { kind: 'css', selector: 'body' },
+            className: 'gv-plugin-late',
+          },
+        ],
+      },
+    };
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const list = vi.fn(async () => {
+      if (list.mock.calls.length === 1) {
+        await gate;
+        return [manifest(['https://claude.ai/*'])];
+      }
+      return [manifest(['https://claude.ai/*']), late];
+    });
+    const host = new PluginHost({
+      url: 'https://claude.ai/chat/1',
+      sources: [{ id: 'spy', list }],
+      doc: document,
+      requestCatalogRefresh: () => {},
+      isTopFrame: true,
+    });
+    const started = host.start();
+    await flush();
+    // The background finishes a refresh for claude.ai before the first read returns.
+    fireCatalogChange(catalogEntry([]), catalogEntry(['voyager.late']));
+    release();
+    await started;
+    await flush();
+
+    expect(list).toHaveBeenCalledTimes(2);
+    expect(document.body.classList.contains('gv-plugin-late')).toBe(true);
+
+    // The fresher listing is the one the host keeps: disabling the late plugin unmounts it.
+    fireStateChange({
+      'voyager.test': { enabled: true, installedAt: 1 },
+      'voyager.late': { enabled: false, installedAt: 1 },
+    });
+    await flush();
+    expect(document.body.classList.contains('gv-plugin-late')).toBe(false);
+    document.body.classList.remove('gv-plugin-late');
+    host.stop();
+  });
+});

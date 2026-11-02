@@ -1,0 +1,13 @@
+{
+  "sinceEngine": "1.8.0",
+  "params": {
+    "code": {
+      "type": "selector",
+      "required": false
+    },
+    "action": {
+      "type": "selector",
+      "required": false
+    }
+  }
+}

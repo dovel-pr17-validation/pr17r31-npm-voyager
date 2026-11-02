@@ -1,0 +1,444 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { StorageKeys } from '@/core/types/common';
+
+import {
+  AccountIsolationService,
+  buildScopedFolderStorageKey,
+  buildScopedStorageKey,
+  detectAccountContextFromDocument,
+  detectAccountPlatformFromUrl,
+  extractRouteUserIdFromUrl,
+} from '../AccountIsolationService';
+
+type MockedChrome = typeof chrome;
+
+function createChromeMock(syncSeed: Record<string, unknown> = {}): MockedChrome {
+  const localStore: Record<string, unknown> = {};
+  const syncStore: Record<string, unknown> = { ...syncSeed };
+
+  const getFromStore = (
+    store: Record<string, unknown>,
+    keys?: unknown,
+  ): Record<string, unknown> => {
+    if (Array.isArray(keys)) {
+      return Object.fromEntries(keys.map((key) => [String(key), store[String(key)]]));
+    }
+    if (typeof keys === 'string') {
+      return { [keys]: store[keys] };
+    }
+    if (keys && typeof keys === 'object') {
+      const defaults = keys as Record<string, unknown>;
+      return Object.fromEntries(
+        Object.keys(defaults).map((key) => [key, store[key] ?? defaults[key]]),
+      );
+    }
+    return { ...store };
+  };
+
+  return {
+    runtime: {
+      sendMessage: vi.fn(),
+    },
+    storage: {
+      local: {
+        get: vi.fn(async (keys?: unknown) => getFromStore(localStore, keys)),
+        set: vi.fn(async (items: Record<string, unknown>) => {
+          Object.assign(localStore, items);
+        }),
+        remove: vi.fn(async (keys: string | string[]) => {
+          const list = Array.isArray(keys) ? keys : [keys];
+          list.forEach((key) => delete localStore[key]);
+        }),
+      },
+      sync: {
+        get: vi.fn(async (keys?: unknown) => getFromStore(syncStore, keys)),
+        set: vi.fn(async (items: Record<string, unknown>) => {
+          Object.assign(syncStore, items);
+        }),
+        remove: vi.fn(async (keys: string | string[]) => {
+          const list = Array.isArray(keys) ? keys : [keys];
+          list.forEach((key) => delete syncStore[key]);
+        }),
+        clear: vi.fn(async () => {
+          Object.keys(syncStore).forEach((key) => delete syncStore[key]);
+        }),
+      },
+      onChanged: {
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+      },
+    },
+  } as unknown as MockedChrome;
+}
+
+describe('AccountIsolationService', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.unstubAllEnvs();
+    Object.defineProperty(navigator, 'locks', {
+      configurable: true,
+      value: undefined,
+    });
+    (globalThis as { chrome: MockedChrome }).chrome = createChromeMock({
+      [StorageKeys.GV_ACCOUNT_ISOLATION_ENABLED]: true,
+    });
+  });
+
+  it('keeps stable account id for the same email', async () => {
+    const service = new AccountIsolationService();
+    const first = await service.resolveAccountScope({
+      pageUrl: 'https://gemini.google.com/u/1/app',
+      routeUserId: '1',
+      email: 'User@example.com',
+    });
+    const second = await service.resolveAccountScope({
+      pageUrl: 'https://gemini.google.com/u/1/app/abc',
+      routeUserId: '1',
+      email: 'user@example.com',
+    });
+
+    expect(first.accountId).toBe(second.accountId);
+    expect(first.accountKey).toBe(second.accountKey);
+    expect(first.accountKey.startsWith('email:')).toBe(true);
+  });
+
+  it('reuses the same account scope when only route id is provided later', async () => {
+    const service = new AccountIsolationService();
+    const withEmail = await service.resolveAccountScope({
+      pageUrl: 'https://gemini.google.com/u/2/app',
+      routeUserId: '2',
+      email: 'route-owner@example.com',
+    });
+    const withRouteOnly = await service.resolveAccountScope({
+      pageUrl: 'https://gemini.google.com/u/2/app',
+      routeUserId: '2',
+    });
+
+    expect(withRouteOnly.accountId).toBe(withEmail.accountId);
+    expect(withRouteOnly.accountKey).toBe(withEmail.accountKey);
+  });
+
+  it('does not reuse a route alias after that route switches to another email', async () => {
+    const service = new AccountIsolationService();
+    const firstAccount = await service.resolveAccountScope({
+      pageUrl: 'https://gemini.google.com/u/0/app',
+      routeUserId: '0',
+      email: 'first@example.com',
+    });
+    const secondAccount = await service.resolveAccountScope({
+      pageUrl: 'https://gemini.google.com/u/0/app',
+      routeUserId: '0',
+      email: 'second@example.com',
+    });
+    const firstAccountAgain = await service.resolveAccountScope({
+      pageUrl: 'https://gemini.google.com/u/0/app',
+      routeUserId: '0',
+      email: 'first@example.com',
+    });
+
+    expect(secondAccount.accountKey).not.toBe(firstAccount.accountKey);
+    expect(secondAccount.accountId).not.toBe(firstAccount.accountId);
+    expect(firstAccountAgain.accountKey).toBe(firstAccount.accountKey);
+    expect(firstAccountAgain.accountId).toBe(firstAccount.accountId);
+  });
+
+  it('does not rewrite the profile map when an identical scope is resolved again', async () => {
+    const service = new AccountIsolationService();
+    const hints = {
+      pageUrl: 'https://gemini.google.com/u/1/app',
+      routeUserId: '1',
+      email: 'user@example.com',
+    };
+
+    await service.resolveAccountScope(hints);
+    const setSpy = chrome.storage.local.set as unknown as ReturnType<typeof vi.fn>;
+    const writesAfterFirst = setSpy.mock.calls.length;
+    // The first resolve creates a new profile and must persist it.
+    expect(writesAfterFirst).toBeGreaterThan(0);
+
+    const repeat = await service.resolveAccountScope(hints);
+    // A second identical resolve changes nothing, so it must not write again
+    // (no updatedAt-only churn / storage.onChanged fan-out on the hot path).
+    expect(setSpy.mock.calls.length).toBe(writesAfterFirst);
+    expect(repeat.accountKey.startsWith('email:')).toBe(true);
+  });
+
+  it('serializes profile-map updates across service instances with Web Locks', async () => {
+    let lockQueue = Promise.resolve();
+    const request = vi.fn(async <T>(_name: string, operation: () => Promise<T>): Promise<T> => {
+      const previous = lockQueue;
+      let releaseQueue: () => void = () => undefined;
+      lockQueue = new Promise<void>((resolve) => {
+        releaseQueue = resolve;
+      });
+      await previous;
+      try {
+        return await operation();
+      } finally {
+        releaseQueue();
+      }
+    });
+    Object.defineProperty(navigator, 'locks', {
+      configurable: true,
+      value: { request },
+    });
+
+    const firstService = new AccountIsolationService();
+    const secondService = new AccountIsolationService();
+    const [first, second] = await Promise.all([
+      firstService.resolveAccountScope({ routeUserId: '1', email: 'first@example.com' }),
+      secondService.resolveAccountScope({ routeUserId: '2', email: 'second@example.com' }),
+    ]);
+
+    const stored = await chrome.storage.local.get(StorageKeys.GV_ACCOUNT_PROFILE_MAP);
+    const map = stored[StorageKeys.GV_ACCOUNT_PROFILE_MAP] as {
+      profiles: Record<string, { id: number }>;
+      routeAliases: Record<string, string>;
+      emailAliases: Record<string, string>;
+    };
+
+    expect(request).toHaveBeenCalledTimes(2);
+    expect(request).toHaveBeenNthCalledWith(1, 'gv-account-profile-map', expect.any(Function));
+    expect(Object.keys(map.profiles)).toEqual(
+      expect.arrayContaining([first.accountKey, second.accountKey]),
+    );
+    expect(map.routeAliases).toMatchObject({ '1': first.accountKey, '2': second.accountKey });
+    expect(map.emailAliases[first.emailHash!]).toBe(first.accountKey);
+    expect(map.emailAliases[second.emailHash!]).toBe(second.accountKey);
+    expect(new Set([first.accountId, second.accountId]).size).toBe(2);
+  });
+
+  it('resolves Firefox content-script scopes in the background instead of using Web Locks', async () => {
+    vi.stubEnv('VOYAGER_BUILD_TARGET', 'firefox');
+    const request = vi.fn(async () => {
+      throw new Error('Permission denied to access property "then"');
+    });
+    Object.defineProperty(navigator, 'locks', {
+      configurable: true,
+      value: { request },
+    });
+
+    const scope = {
+      accountKey: 'email:firefox-account',
+      accountId: 7,
+      routeUserId: '2',
+      emailHash: 'firefox-account',
+    };
+    const sendMessage = chrome.runtime.sendMessage as unknown as ReturnType<typeof vi.fn>;
+    sendMessage.mockResolvedValue({ ok: true, scope });
+    const hints = {
+      pageUrl: 'https://gemini.google.com/u/2/app',
+      routeUserId: '2',
+      email: 'firefox@example.com',
+    };
+
+    await expect(new AccountIsolationService().resolveAccountScope(hints)).resolves.toEqual(scope);
+    expect(sendMessage).toHaveBeenCalledWith({
+      type: 'gv.account.resolve',
+      payload: hints,
+    });
+    expect(request).not.toHaveBeenCalled();
+    expect(chrome.storage.local.get).not.toHaveBeenCalled();
+  });
+
+  it('extracts route user id from gemini urls', () => {
+    expect(extractRouteUserIdFromUrl('https://gemini.google.com/u/3/app')).toBe('3');
+    expect(extractRouteUserIdFromUrl('https://gemini.google.com/app')).toBeNull();
+    expect(extractRouteUserIdFromUrl('not-a-url')).toBeNull();
+  });
+
+  it('builds deterministic scoped folder storage keys', () => {
+    const keyA = buildScopedFolderStorageKey('email:abc');
+    const keyB = buildScopedFolderStorageKey('email:abc');
+    const keyC = buildScopedFolderStorageKey('route:1');
+
+    expect(keyA).toBe(keyB);
+    expect(keyA).not.toBe(keyC);
+    expect(keyA.startsWith('gvFolderData:acct:')).toBe(true);
+  });
+
+  it('reads account context from document attributes', () => {
+    document.body.innerHTML = `
+      <button aria-label="Google Account: User Name (sample.user@example.com)"></button>
+    `;
+    const context = detectAccountContextFromDocument('https://gemini.google.com/u/4/app', document);
+    expect(context.routeUserId).toBe('4');
+    expect(context.email).toBe('sample.user@example.com');
+  });
+
+  it('keeps a Gemini route bound to its account when a reply shows another email', async () => {
+    const pageUrl = 'https://gemini.google.com/u/0/app/c1';
+    const service = new AccountIsolationService();
+    const owner = await service.resolveAccountScope({
+      pageUrl,
+      routeUserId: '0',
+      email: 'owner@example.com',
+    });
+    document.body.innerHTML = `
+      <div id="chat-history">
+        <model-response>
+          <message-content>
+            <a href="mailto:support@example.net">Write to support@example.net</a>
+            <button aria-label="Copy support@example.net"></button>
+          </message-content>
+        </model-response>
+      </div>
+      <conversations-list><a aria-label="Mail ops@example.org">Mail ops@example.org</a></conversations-list>
+      <span title="Ask help@example.io">tip</span>
+    `;
+
+    const context = detectAccountContextFromDocument(pageUrl, document);
+    const scope = await service.resolveAccountScope({
+      pageUrl,
+      routeUserId: context.routeUserId,
+      email: context.email,
+    });
+
+    expect(context.email).toBeNull();
+    expect(scope.accountKey).toBe(owner.accountKey);
+    const stored = (await chrome.storage.local.get(StorageKeys.GV_ACCOUNT_PROFILE_MAP))[
+      StorageKeys.GV_ACCOUNT_PROFILE_MAP
+    ] as { routeAliases: Record<string, string> };
+    expect(stored.routeAliases['0']).toBe(owner.accountKey);
+  });
+
+  it('reads the Gemini account from the Google account control, not from the thread', () => {
+    document.body.innerHTML = `
+      <div id="chat-history"><model-response><a href="mailto:support@example.net">mail</a></model-response></div>
+      <header>
+        <a href="https://accounts.google.com/SignOutOptions?hl=en" role="button"
+           aria-label="Google Account: Owner (owner@example.com)"></a>
+      </header>
+    `;
+    const context = detectAccountContextFromDocument('https://gemini.google.com/u/0/app', document);
+    expect(context.email).toBe('owner@example.com');
+  });
+
+  it('reads AI Studio account email from account switcher structure', () => {
+    document.body.innerHTML = `
+      <div class="account-switcher-container">
+        <button class="account-switcher-button">
+          <span class="account-switcher-text"> someone@example.com </span>
+        </button>
+        <alkali-accountswitcher>
+          <div id="account-switcher-button">
+            <div class="button-container" aria-label="Google 账号：Test User (someone@example.com)"></div>
+          </div>
+        </alkali-accountswitcher>
+      </div>
+    `;
+
+    const context = detectAccountContextFromDocument(
+      'https://aistudio.google.com/prompts',
+      document,
+    );
+    expect(context.routeUserId).toBeNull();
+    expect(context.email).toBe('someone@example.com');
+  });
+
+  it('names no AI Studio account from page text while its switcher is unreadable', () => {
+    document.body.innerHTML = `
+      <a href="mailto:a@example.com">a@example.com</a>
+      <span title="a@example.com" data-email="a@example.com"></span>
+      <button aria-label="Share with a@example.com"></button>
+      <img alt="a@example.com" />
+    `;
+    const context = detectAccountContextFromDocument(
+      'https://aistudio.google.com/prompts',
+      document,
+    );
+    expect(context.email).toBeNull();
+  });
+
+  it('keeps the scoped AI Studio folder key of an account whose switcher is readable', async () => {
+    document.body.innerHTML = `
+      <a href="mailto:a@example.com">a@example.com</a>
+      <span class="account-switcher-text"> someone@example.com </span>
+    `;
+    const pageUrl = 'https://aistudio.google.com/prompts';
+    const context = detectAccountContextFromDocument(pageUrl, document);
+    const scope = await new AccountIsolationService().resolveAccountScope({ pageUrl, ...context });
+    expect(buildScopedStorageKey(StorageKeys.FOLDER_DATA_AISTUDIO, scope.accountKey)).toBe(
+      'gvFolderDataAIStudio:acct:yh1hyi',
+    );
+  });
+
+  it.each(['https://chatgpt.com/c/1', 'https://claude.ai/chat/1', 'https://chat.deepseek.com/'])(
+    'still reads a page-wide account email on %s',
+    (pageUrl) => {
+      document.body.innerHTML = '<a href="mailto:someone@example.com">Account</a>';
+      expect(detectAccountContextFromDocument(pageUrl, document).email).toBe('someone@example.com');
+    },
+  );
+
+  it('detects account platform from url', () => {
+    expect(detectAccountPlatformFromUrl('https://aistudio.google.com/prompts')).toBe('aistudio');
+    expect(detectAccountPlatformFromUrl('https://aistudio.google.cn/library')).toBe('aistudio');
+    expect(detectAccountPlatformFromUrl('https://gemini.google.com/app')).toBe('gemini');
+    expect(detectAccountPlatformFromUrl('https://business.gemini.google/u/1/app')).toBe('gemini');
+    expect(detectAccountPlatformFromUrl(null)).toBe('gemini');
+  });
+
+  it('keeps the Gemini default only when there is no web page to classify', () => {
+    expect(detectAccountPlatformFromUrl('')).toBe('gemini');
+    expect(detectAccountPlatformFromUrl('chrome://newtab/')).toBe('gemini');
+    expect(
+      detectAccountPlatformFromUrl('chrome-extension://abc/src/pages/options/index.html'),
+    ).toBe('gemini');
+  });
+
+  it('never resolves a non-Gemini site to a Gemini or AI Studio folder platform', () => {
+    for (const url of [
+      'https://chatgpt.com/c/123',
+      'https://chatgpt.com/g/g-p-abc/c/123',
+      'https://claude.ai/chat/123',
+      'https://chat.deepseek.com/a/chat/s/123',
+      'https://example.com/',
+      'http://localhost:3000/',
+    ]) {
+      expect(detectAccountPlatformFromUrl(url), url).toBeNull();
+    }
+  });
+
+  it('reports isolation off on sites without a folder bucket, even with the legacy switch on', async () => {
+    (globalThis as { chrome: MockedChrome }).chrome = createChromeMock({
+      [StorageKeys.GV_ACCOUNT_ISOLATION_ENABLED]: true,
+      [StorageKeys.GV_ACCOUNT_ISOLATION_ENABLED_GEMINI]: true,
+    });
+
+    const service = new AccountIsolationService();
+    await expect(
+      service.isIsolationEnabled({ pageUrl: 'https://chatgpt.com/c/123' }),
+    ).resolves.toBe(false);
+    await expect(
+      service.isIsolationEnabled({ platform: null, pageUrl: 'https://gemini.google.com/app' }),
+    ).resolves.toBe(false);
+    await expect(
+      service.isIsolationEnabled({ pageUrl: 'https://gemini.google.com/app' }),
+    ).resolves.toBe(true);
+    await expect(service.isIsolationEnabled()).resolves.toBe(true);
+  });
+
+  it('prefers platform-specific isolation switches over legacy switch', async () => {
+    (globalThis as { chrome: MockedChrome }).chrome = createChromeMock({
+      [StorageKeys.GV_ACCOUNT_ISOLATION_ENABLED]: true,
+      [StorageKeys.GV_ACCOUNT_ISOLATION_ENABLED_GEMINI]: false,
+      [StorageKeys.GV_ACCOUNT_ISOLATION_ENABLED_AISTUDIO]: true,
+    });
+
+    const service = new AccountIsolationService();
+    await expect(service.isIsolationEnabled({ platform: 'gemini' })).resolves.toBe(false);
+    await expect(service.isIsolationEnabled({ platform: 'aistudio' })).resolves.toBe(true);
+  });
+
+  it('falls back to legacy isolation switch when platform-specific switch is missing', async () => {
+    (globalThis as { chrome: MockedChrome }).chrome = createChromeMock({
+      [StorageKeys.GV_ACCOUNT_ISOLATION_ENABLED]: true,
+    });
+
+    const service = new AccountIsolationService();
+    await expect(service.isIsolationEnabled({ platform: 'gemini' })).resolves.toBe(true);
+    await expect(service.isIsolationEnabled({ platform: 'aistudio' })).resolves.toBe(true);
+  });
+});

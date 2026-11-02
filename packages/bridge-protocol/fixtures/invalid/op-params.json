@@ -1,0 +1,342 @@
+[
+  {
+    "name": "open with both new and an id",
+    "kind": "opParams",
+    "op": "conversation.open",
+    "input": {
+      "new": true,
+      "conversationId": "abc"
+    },
+    "issuePath": "$"
+  },
+  {
+    "name": "open with new false",
+    "kind": "opParams",
+    "op": "conversation.open",
+    "input": {
+      "new": false
+    },
+    "issuePath": "new"
+  },
+  {
+    "name": "conversation id with a path",
+    "kind": "opParams",
+    "op": "conversation.open",
+    "input": {
+      "conversationId": "../settings"
+    },
+    "issuePath": "conversationId"
+  },
+  {
+    "name": "negative tab id",
+    "kind": "opParams",
+    "op": "conversation.close",
+    "input": {
+      "tabId": -1
+    },
+    "issuePath": "tabId"
+  },
+  {
+    "name": "ready ensuring an unknown mode",
+    "kind": "opParams",
+    "op": "conversation.ready",
+    "input": {
+      "ensureMode": "unknown"
+    },
+    "issuePath": "ensureMode"
+  },
+  {
+    "name": "preset and model together",
+    "kind": "opParams",
+    "op": "model.select",
+    "input": {
+      "target": {
+        "preset": "pro",
+        "mode": "chat",
+        "model": "gpt-6"
+      }
+    },
+    "issuePath": "target"
+  },
+  {
+    "name": "effort and effortIndex together",
+    "kind": "opParams",
+    "op": "model.select",
+    "input": {
+      "target": {
+        "mode": "chat",
+        "model": "gpt-6",
+        "effort": "pro",
+        "effortIndex": 4
+      }
+    },
+    "issuePath": "target"
+  },
+  {
+    "name": "work mode target",
+    "kind": "opParams",
+    "op": "model.select",
+    "input": {
+      "target": {
+        "mode": "work",
+        "model": "gpt-6"
+      }
+    },
+    "issuePath": "target.mode"
+  },
+  {
+    "name": "no blobs",
+    "kind": "opParams",
+    "op": "composer.attach",
+    "input": {
+      "blobs": []
+    },
+    "issuePath": "blobs"
+  },
+  {
+    "name": "eleven blobs",
+    "kind": "opParams",
+    "op": "composer.attach",
+    "input": {
+      "blobs": [
+        {
+          "blobId": "b0",
+          "name": "proj.zip",
+          "size": 2048,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "mime": "application/zip"
+        },
+        {
+          "blobId": "b1",
+          "name": "proj.zip",
+          "size": 2048,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "mime": "application/zip"
+        },
+        {
+          "blobId": "b2",
+          "name": "proj.zip",
+          "size": 2048,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "mime": "application/zip"
+        },
+        {
+          "blobId": "b3",
+          "name": "proj.zip",
+          "size": 2048,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "mime": "application/zip"
+        },
+        {
+          "blobId": "b4",
+          "name": "proj.zip",
+          "size": 2048,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "mime": "application/zip"
+        },
+        {
+          "blobId": "b5",
+          "name": "proj.zip",
+          "size": 2048,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "mime": "application/zip"
+        },
+        {
+          "blobId": "b6",
+          "name": "proj.zip",
+          "size": 2048,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "mime": "application/zip"
+        },
+        {
+          "blobId": "b7",
+          "name": "proj.zip",
+          "size": 2048,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "mime": "application/zip"
+        },
+        {
+          "blobId": "b8",
+          "name": "proj.zip",
+          "size": 2048,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "mime": "application/zip"
+        },
+        {
+          "blobId": "b9",
+          "name": "proj.zip",
+          "size": 2048,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "mime": "application/zip"
+        },
+        {
+          "blobId": "b10",
+          "name": "proj.zip",
+          "size": 2048,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "mime": "application/zip"
+        }
+      ]
+    },
+    "issuePath": "blobs"
+  },
+  {
+    "name": "blob name with a slash",
+    "kind": "opParams",
+    "op": "composer.attach",
+    "input": {
+      "blobs": [
+        {
+          "blobId": "blob_1",
+          "name": "a/b.zip",
+          "size": 2048,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "mime": "application/zip"
+        }
+      ]
+    },
+    "issuePath": "blobs[0].name"
+  },
+  {
+    "name": "blob sha256 too short",
+    "kind": "opParams",
+    "op": "composer.attach",
+    "input": {
+      "blobs": [
+        {
+          "blobId": "blob_1",
+          "name": "proj.zip",
+          "size": 2048,
+          "sha256": "abc",
+          "mime": "application/zip"
+        }
+      ]
+    },
+    "issuePath": "blobs[0].sha256"
+  },
+  {
+    "name": "empty text",
+    "kind": "opParams",
+    "op": "composer.send",
+    "input": {
+      "text": ""
+    },
+    "issuePath": "text"
+  },
+  {
+    "name": "send expecting a conversation without its id",
+    "kind": "opParams",
+    "op": "composer.send",
+    "input": {
+      "text": "and now?",
+      "expect": {}
+    },
+    "issuePath": "expect.conversationId"
+  },
+  {
+    "name": "wait longer than 12 hours",
+    "kind": "opParams",
+    "op": "turns.waitReply",
+    "input": {
+      "conversationId": "abc",
+      "afterUserTurnKey": "t-7",
+      "timeoutMs": 43200001
+    },
+    "issuePath": "timeoutMs"
+  },
+  {
+    "name": "wait with an empty stall window",
+    "kind": "opParams",
+    "op": "turns.waitReply",
+    "input": {
+      "conversationId": "abc",
+      "afterUserTurnKey": "t-7",
+      "stallMs": 0
+    },
+    "issuePath": "stallMs"
+  },
+  {
+    "name": "download without a candidate",
+    "kind": "opParams",
+    "op": "files.download",
+    "input": {
+      "conversationId": "abc",
+      "assistantTurnKey": "t-8"
+    },
+    "issuePath": "candidate"
+  },
+  {
+    "name": "attachment over 64 MiB",
+    "kind": "opParams",
+    "op": "composer.attach",
+    "input": {
+      "blobs": [
+        {
+          "blobId": "b0",
+          "name": "proj.zip",
+          "size": 67108865,
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "mime": "application/zip"
+        }
+      ]
+    },
+    "issuePath": "blobs[0].size"
+  },
+  {
+    "name": "read with both a turn key and latest",
+    "kind": "opParams",
+    "op": "turns.read",
+    "input": {
+      "conversationId": "abc-123",
+      "assistantTurnKey": "t-8",
+      "latest": true
+    },
+    "issuePath": "$"
+  },
+  {
+    "name": "read with latest false",
+    "kind": "opParams",
+    "op": "turns.read",
+    "input": {
+      "conversationId": "abc-123",
+      "latest": false
+    },
+    "issuePath": "latest"
+  },
+  {
+    "name": "read with neither a turn key nor latest",
+    "kind": "opParams",
+    "op": "turns.read",
+    "input": {
+      "conversationId": "abc-123"
+    },
+    "issuePath": "assistantTurnKey"
+  },
+  {
+    "name": "refresh a host with a path",
+    "kind": "opParams",
+    "op": "catalog.refresh",
+    "input": {
+      "host": "chatgpt.com/hosts"
+    },
+    "issuePath": "host"
+  },
+  {
+    "name": "refresh an uppercase host",
+    "kind": "opParams",
+    "op": "catalog.refresh",
+    "input": {
+      "host": "ChatGPT.com"
+    },
+    "issuePath": "host"
+  },
+  {
+    "name": "refresh a host without a dot",
+    "kind": "opParams",
+    "op": "catalog.refresh",
+    "input": {
+      "host": "localhost"
+    },
+    "issuePath": "host"
+  }
+]
