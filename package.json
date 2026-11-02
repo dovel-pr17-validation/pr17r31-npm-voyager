@@ -61,7 +61,7 @@
   "type": "module",
   "dependencies": {
     "@floating-ui/dom": "1.8.0",
-    "@headless-tree/core": "1.7.0",
+    "@headless-tree/core": "1.8.0",
     "@tanstack/virtual-core": "3.17.11",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -86,7 +86,7 @@
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "2.2.1",
-    "@nolebase/vitepress-plugin-git-changelog": "^2.18.2",
+    "@nolebase/vitepress-plugin-git-changelog": "^2.21.1",
     "@tailwindcss/vite": "^4.1.15",
     "@types/chrome": "^0.1.24",
     "@types/jsdom": "^27.0.0",
